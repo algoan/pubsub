@@ -1,0 +1,105 @@
+{
+  "name": "@algoan/pubsub",
+  "version": "2.0.0",
+  "description": "PubSub Library for algoan",
+  "main": "./dist/src/index.js",
+  "typings": "./dist/src/index.d.ts",
+  "scripts": {
+    "install-global": "npm i -g typescript",
+    "clean": "rm -fR ./dist ./coverage ./.nyc_output",
+    "clean-all": "npm run clean && rm -fR ./node_modules",
+    "compile": "tsc -p .",
+    "prepare": "npm run compile",
+    "precommit": "lint-staged",
+    "commit": "git-cz",
+    "format": "prettier --write \"{src,test}/**/*.ts\"",
+    "simulator": "gcloud beta emulators pubsub start",
+    "pretest": "npm run compile && npm run lint",
+    "prettier": "prettier --write '{src,test}/**/*.ts'",
+    "lint": "tslint ./src/*.ts ./src/**/*.ts --project tsconfig.json",
+    "test-without-simulator": "ava --color --verbose --fail-fast",
+    "test": "ava --color --verbose",
+    "cover": "nyc --reporter=html --reporter=lcov npm test",
+    "semantic-release": "semantic-release"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/algoan/pubsub.git"
+  },
+  "keywords": [
+    "typescript",
+    "nodejs",
+    "google-pubsub"
+  ],
+  "files": [
+    "dist/src/"
+  ],
+  "author": "algoan",
+  "license": "ISC",
+  "devDependencies": {
+    "@commitlint/cli": "^8.2.0",
+    "@commitlint/config-conventional": "^8.2.0",
+    "@semantic-release/git": "^9.0.0",
+    "@types/pino": "^6.0.0",
+    "@yelloan/tslint": "0.3.0",
+    "ava": "2.4.0",
+    "commitizen": "^4.0.4",
+    "cz-conventional-changelog": "^3.0.2",
+    "google-pubsub-emulator": "^3.0.2",
+    "husky": "^4.2.3",
+    "lint-staged": "^10.0.7",
+    "nyc": "15.0.1",
+    "pino-pretty": "^4.0.0",
+    "prettier": "^2.0.4",
+    "semantic-release": "17.0.4",
+    "tslint": "^6.1.1",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "@google-cloud/pubsub": "^1.7.2",
+    "pino": "^6.1.1"
+  },
+  "engines": {
+    "node": ">=10.16.0"
+  },
+  "ava": {
+    "files": [
+      "./dist/test/*.test.js"
+    ],
+    "sources": [
+      "./test/**/*.ts"
+    ],
+    "concurrency": 5,
+    "failFast": true,
+    "failWithoutAssertions": false,
+    "compileEnhancements": false
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "lint-staged": {
+    "{src,test}/**/*.ts": [
+      "prettier --list-different \"{src,test}/**/*.ts\""
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "nyc": {
+    "check-coverage": false,
+    "per-file": true,
+    "cache": false,
+    "extension": [
+      ".ts"
+    ]
+  }
+}

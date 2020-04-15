@@ -1,0 +1,12 @@
+{
+    "extends": [
+      "@yelloan/tslint/tslint-config",
+      "tslint-config-prettier"
+    ],
+    "rules": {
+      "typedef": [true, "call-signature", "arrow-call-signature", "parameter", "arrow-parameter", "property-declaration",
+          "variable-declaration", "member-variable-declaration"],
+      "completed-docs": [true, "functions", "methods", "classes", "interfaces", "enums"]
+    }
+  }
+  
