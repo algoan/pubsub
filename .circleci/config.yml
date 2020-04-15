@@ -3,25 +3,13 @@
 # Check https://circleci.com/docs/2.0/language-javascript/ for more details
 #
 version: 2
-
-
 workflows:
   version: 2
   test-publish:
     jobs:
-      - test:
-          context : algoan
-      - analyse:
-          context: algoan
-          requires :
-            - test
-          filters:
-            branches:
-              ignore :
-                - master
-                - /dependabot\/.*/
+      - test
       - publish:
-          context : npm_publish
+          context: semantic_release
           requires:
             - test
           filters:
@@ -33,21 +21,9 @@ workflows:
 imageA: &defaults
   working_directory: ~/tmp
   docker:
-    - image: yelloan/node-docker:lts-alpine
+    - image: yelloan/node-docker:lts
   environment:
-    DEBUG: ""
-    # 'production' is required for the final build to be ready for production
-    # so we have to find a solution to modules which are needed and defined in a devDependencies part
     NODE_ENV: test
-
-
-imageB: &SonarScanner
-    working_directory: ~/tmp
-    docker:
-    - image: yelloan/sonar-scanner:${CIRCLE_TAG:-latest}
-    environement:
-    DEBUG: ""
-    NODE_ENV: development
 
 jobs:
   test:
@@ -58,63 +34,24 @@ jobs:
           keys:
           - dependency-cache-{{ checksum "package-lock.json" }}
       - run:
-          name: Authenticate with registry
-          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/tmp/.npmrc
-      - run:
           name: Install node dependencies
           command: npm ci
       - run:
-          name: Run tests and coverage
+          name: Run tests
           command: npm run cover
-
       - save_cache:
           paths:
             - node_modules
           key: dependency-cache-{{ checksum "package-lock.json" }}
-
       - persist_to_workspace:
           root: ~/tmp
-          paths: [.]
+          paths: .
   publish:
     <<: *defaults
     steps:
+      - checkout
       - attach_workspace:
           at: ~/tmp
-      - run:
-          name: Authenticate with registry
-          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/tmp/.npmrc
       - run:
           name: Publish package
           command: npm run semantic-release
-  analyse:
-    <<: *SonarScanner
-    steps:
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: ~/tmp
-      - run:
-          name: Init gcloud command
-          command: |
-            echo $DEV_K8S_GCLOUD_SERVICE_KEY | base64 -d > ${HOME}/gcloud-service-key.json
-            gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
-            gcloud config set project $TOOLS_PROJECT_NAME
-      - run:
-          name: Stores VM CircleCI IP
-          command: |
-            echo 'export VM_CIRCLECI_IP=$(curl http://checkip.amazonaws.com/)' >> $BASH_ENV
-            source $BASH_ENV
-      - run:
-          name: Add VM CircleCI IP into the IP whitelist
-          command: |
-            if [[ `gcloud compute --project=$TOOLS_PROJECT_NAME firewall-rules list` != *circleci-$CIRCLE_JOB-$CIRCLE_SHA1* ]]; then
-            gcloud compute --project=$TOOLS_PROJECT_NAME firewall-rules create circleci-$CIRCLE_JOB-$CIRCLE_SHA1 --direction=INGRESS --priority=1000 --network=default --target-tags=$SONAR_TARGET_TAG --action=ALLOW --rules=tcp:80,tcp:443 --source-ranges=$VM_CIRCLECI_IP  ;
-            fi
-      - run:
-          name: Launch SonarScanner analyse
-          command: if [ $CIRCLE_BRANCH = "master"];
-              then sonar-scanner -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_URL -Dsonar.analysis.mode= ;
-            else sonar-scanner -Dsonar.analysis.mode=preview -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_URL -Dsonar.github.pullRequest=$CIRCLE_PR_NUMBER -Dsonar.github.repository=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME -Dsonar.github.oauth=$GH_BOT_TOKEN ;
-            fi
-      - run:
-          name: Delete VM CircleCI IP into the IP whitelist
-          command: gcloud compute --project=$TOOLS_PROJECT_NAME firewall-rules delete circleci-$CIRCLE_JOB-$CIRCLE_SHA1
