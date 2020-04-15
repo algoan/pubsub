@@ -1,6 +1,14 @@
-# algoan-pubsub
+# PubSub
 
-This is a wrapper of google pubsub which adds some specific methods for Algoan.
+This is a generic PubSub Factory exposing a listen and a emit method.
+
+_NOTE_: Today, only [Google Cloud PubSub](https://cloud.google.com/pubsub/docs/overview) has been added.
+
+## Installation
+
+```bash
+npm install --save @algoan/pubsub
+```
 
 ## Setup for simulator
 
@@ -25,10 +33,10 @@ It will launch a Google PubSub emulator
 
 ## Usage
 
-To create a GooglePubSub instance:
+To create a PubSub instance using Google Cloud:
 
 ```typescript
-import { ExtendedMessage, PubSub, PubSubFactory, Transport } from '@yelloan/algoan-pubsub'
+import { ExtendedMessage, PubSub, PubSubFactory, Transport } from '@algoan/pubsub'
 
 const pubSub: PubSub = PubSubFactory.create({
   transport: Transport.GOOGLE_PUBSUB,
@@ -52,6 +60,10 @@ await pubsub.listen(topicName, {
 
 await pubsub.emit(topicName, { foo: 'bar' });
 ```
+
+### Contribution
+
+This module uses [semantic-release](https://github.com/semantic-release/semantic-release), please follow these [instructions](https://github.com/semantic-release/commit-analyzer#default-rules-matching) to contribute to the project or use `npm run commit`.
 
 ## API
 
