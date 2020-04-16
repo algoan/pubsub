@@ -1,2 +1,3 @@
 export * from './PubSubFactory';
-export * from '@google-cloud/pubsub';
+export * from './PubSub';
+export * from './GoogleCloudPubSub';
