@@ -1,9 +1,7 @@
 import test, { CbExecutionContext, ExecutionContext } from 'ava';
 const Emulator = require('google-pubsub-emulator');
 
-import { PubSubFactory, Transport } from '../src';
-import { ExtendedMessage } from '../src/GoogleCloudPubSub/ExtendedMessage';
-import { PubSub } from '../src/PubSub';
+import { EmittedMessage, GCPubSub, PubSubFactory, Transport } from '../src';
 
 const projectId: string = 'algoan-test';
 
@@ -27,7 +25,7 @@ test.after.always(async () => {
 
 test.cb('GPS001 - should properly emit and listen', (t: CbExecutionContext): void => {
   const topicName: string = 'test_a_created';
-  const pubSub: PubSub = PubSubFactory.create({
+  const pubSub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
       projectId,
@@ -35,12 +33,20 @@ test.cb('GPS001 - should properly emit and listen', (t: CbExecutionContext): voi
     },
   });
 
-  void pubSub.listen<OnMessage>(topicName, {
-    autoAck: true,
-    onMessage(data: ExtendedMessage<OnMessage>): void {
-      t.is(data.parsedData.hello, 'world');
-      t.is(data.parsedData._eventName, topicName);
-      t.truthy(data.parsedData.time);
+  void pubSub.listen(topicName, {
+    options: {
+      autoAck: true,
+    },
+    onMessage(message: EmittedMessage<OnMessage>): void {
+      t.deepEqual(message.payload, {
+        hello: 'world',
+      });
+      t.truthy(message.id);
+      t.truthy(message.ackId);
+      t.truthy(message.emittedAt);
+      t.truthy(message.receivedAt);
+      t.is(message.count, 0);
+      t.truthy(message.duration);
       t.pass(`Listen successfully to the topic ${topicName}`);
       t.end();
     },
@@ -58,7 +64,7 @@ test.cb(
   'GPS002 - should properly emit and but the ack method is never called - no ack',
   (t: CbExecutionContext): void => {
     const topicName: string = 'test_b_created';
-    const pubSub: PubSub = PubSubFactory.create({
+    const pubSub: GCPubSub = PubSubFactory.create({
       transport: Transport.GOOGLE_PUBSUB,
       options: {
         projectId,
@@ -68,45 +74,40 @@ test.cb(
     });
 
     void pubSub.listen(topicName, {
-      onMessage(data: ExtendedMessage<OnMessage>): void {
-        t.is(data.parsedData.hello, 'world');
-        t.is(data.parsedData._eventName, topicName);
-        t.truthy(data.parsedData.time);
-        t.deepEqual(data.message.attributes, {
+      onMessage(message: EmittedMessage<OnMessage>): void {
+        t.deepEqual(message.payload, {
+          hello: 'world',
+        });
+        t.deepEqual(message.metadata, {
           namespace: 'test-app',
           environment: 'test',
         });
+        t.truthy(message.id);
+        t.truthy(message.ackId);
+        t.truthy(message.emittedAt);
+        t.truthy(message.receivedAt);
+        t.is(message.count, 0);
+        t.truthy(message.duration);
         t.pass(`Listen successfully to the topic ${topicName}`);
         t.end();
       },
-      autoAck: false,
+      options: {
+        autoAck: false,
+      },
     });
 
     /**
      * The first client emit on a topic
      */
-    setTimeout(() => {
-      void pubSub.emit(
-        topicName,
-        { hello: 'world' },
-        {
-          topicOptions: {
-            longrunning: {
-              totalTimeoutMillis: 10,
-              initialRetryDelayMillis: 2,
-              maxRetryDelayMillis: 9,
-              retryDelayMultiplier: 1,
-            },
-          },
-        },
-      );
+    setTimeout((): void => {
+      void pubSub.emit(topicName, { hello: 'world' });
     }, 500);
   },
 );
 
 test('GPS003 - should add prefix to subscription and topic', async (t: ExecutionContext): Promise<void> => {
   const topicName: string = 'topic_1';
-  const pubsub: PubSub = PubSubFactory.create({
+  const pubsub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
       projectId,
@@ -126,7 +127,7 @@ test('GPS003 - should add prefix to subscription and topic', async (t: Execution
 
 test('GPS004 - should not add prefix to subscription and topic', async (t: ExecutionContext): Promise<void> => {
   const topicName: string = 'topic_2';
-  const pubsub: PubSub = PubSubFactory.create({
+  const pubsub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
       projectId,
