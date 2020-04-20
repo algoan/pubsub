@@ -11,18 +11,23 @@ import {
 } from '@google-cloud/pubsub';
 import * as Pino from 'pino';
 
-import { PubSub } from '../PubSub';
-import { ExtendedMessage, ExtendedPayload } from './ExtendedMessage';
-import { EmitOptions, GooglePubSubOptions, ListenOptions, SubscriptionMap, TopicMap } from './lib';
+import { EmitOptions, ListenOptions } from '..';
+import { ExtendedMessage } from './ExtendedMessage';
+import { GCListenOptions, GCPubSub, GooglePubSubOptions, SubscriptionMap, TopicMap } from './lib';
 
 /**
  * Google PubSub SDK
  */
-export class GoogleCloudPubSub implements PubSub {
+export class GoogleCloudPubSub implements GCPubSub {
   /**
    * Google cloud pubsub Client
    */
   public client: GPubSub;
+
+  /**
+   * Cached topics of the emitter
+   */
+  public readonly subscriptions: SubscriptionMap;
 
   /**
    * Subscription prefix
@@ -56,11 +61,6 @@ export class GoogleCloudPubSub implements PubSub {
   private readonly topics: TopicMap;
 
   /**
-   * Cached topics of the emitter
-   */
-  private readonly subscriptions: SubscriptionMap;
-
-  /**
    * Logger
    */
   private readonly logger: Pino.Logger;
@@ -84,14 +84,21 @@ export class GoogleCloudPubSub implements PubSub {
    * Only pull method
    * @tutorial https://cloud.google.com/pubsub/docs/pull
    * @param event Event to subscribe to
-   * @param options Options related to the listen method
+   * @param opts Options related to the listen method
    */
-  public async listen<T>(event: string, options: ListenOptions<T> = { autoAck: true }): Promise<void> {
-    const topic: Topic = await this.getOrCreateTopic(event, options.topicOptions);
-    const subscription: Subscription = await this.getOrCreateSubscription(event, topic, options.subscriptionOptions);
+  public async listen<T>(
+    event: string,
+    opts: ListenOptions<T, GCListenOptions> = { options: { autoAck: true } },
+  ): Promise<void> {
+    const topic: Topic = await this.getOrCreateTopic(event, opts.options?.topicOptions);
+    const subscription: Subscription = await this.getOrCreateSubscription(
+      event,
+      topic,
+      opts.options?.subscriptionOptions,
+    );
     this.logger.debug(
       {
-        options,
+        options: opts,
       },
       `Listened to topic ${topic.name} with subscription ${subscription.name}`,
     );
@@ -100,28 +107,26 @@ export class GoogleCloudPubSub implements PubSub {
       const extendedMessage: ExtendedMessage<T> = new ExtendedMessage<T>(message);
 
       this.logger.debug(
-        {
-          parsedData: extendedMessage.parsedData,
-        },
+        extendedMessage,
         `A message has been received for Subscription ${subscription.name} after ${
           message.received - message.publishTime.valueOf()
         } ms`,
       );
 
-      if (options.autoAck === true) {
+      if (opts.options?.autoAck === true) {
         message.ack();
       }
 
-      if (options.onMessage !== undefined) {
-        options.onMessage(extendedMessage);
+      if (opts.onMessage !== undefined) {
+        opts.onMessage(extendedMessage);
       }
     });
 
     subscription.on('error', (error: Error): void => {
       this.logger.error(error, `An error occurred when listening to subscription ${subscription.name}`);
 
-      if (options.onError !== undefined) {
-        options.onError(error);
+      if (opts.onError !== undefined) {
+        opts.onError(error);
       }
     });
   }
@@ -131,24 +136,19 @@ export class GoogleCloudPubSub implements PubSub {
    * @tutorial https://cloud.google.com/pubsub/docs/publisher
    * @param event Event name to publish
    * @param payload Payload to share
-   * @param options Emit options
+   * @param opts Emit options
    */
-  public async emit<T>(event: string, data: T, options: EmitOptions = {}): Promise<string> {
-    const topic: Topic = await this.getOrCreateTopic(event, options.topicOptions);
+  public async emit(event: string, data: object, opts: EmitOptions<GCListenOptions> = {}): Promise<string> {
+    const topic: Topic = await this.getOrCreateTopic(event, opts.options?.topicOptions);
     this.logger.debug(
       {
         data,
-        options,
+        options: opts,
       },
       `Found topic ${topic.name} for event ${event}`,
     );
 
     const attributes: Attributes = {};
-    const payload: ExtendedPayload<T> = {
-      _eventName: event,
-      time: Date.now(),
-      ...data,
-    };
 
     if (this.namespace !== undefined) {
       attributes.namespace = this.namespace;
@@ -160,14 +160,14 @@ export class GoogleCloudPubSub implements PubSub {
 
     this.logger.debug(
       {
-        payload,
+        data,
         attributes,
-        options,
+        options: opts,
       },
       `Sending payload to Topic ${topic.name}`,
     );
 
-    return topic.publishJSON(payload, { ...attributes, ...options.customAttributes });
+    return topic.publishJSON(data, { ...attributes, ...opts.metadata });
   }
 
   /**

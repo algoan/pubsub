@@ -1,5 +1,4 @@
-import { GoogleCloudPubSub, GooglePubSubOptions } from './GoogleCloudPubSub';
-import { PubSub } from './PubSub';
+import { GCPubSub, GoogleCloudPubSub, GooglePubSubOptions } from './GoogleCloudPubSub';
 
 /**
  * PubSub factory class
@@ -10,7 +9,7 @@ export class PubSubFactory {
    * Create a pubsub instance depending of the transport
    * @param params PubSub parameters
    */
-  public static create(params: FactoryParameters = { transport: Transport.GOOGLE_PUBSUB }): PubSub {
+  public static create(params: FactoryParameters = { transport: Transport.GOOGLE_PUBSUB }): GCPubSub {
     return new GoogleCloudPubSub(params.options);
   }
 }

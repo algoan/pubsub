@@ -1,3 +1,4 @@
 export * from './PubSubFactory';
 export * from './PubSub';
-export * from './GoogleCloudPubSub';
+export * from './EmittedMessage';
+export * from './GoogleCloudPubSub/lib';

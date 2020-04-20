@@ -10,35 +10,38 @@ _NOTE_: Today, only [Google Cloud PubSub](https://cloud.google.com/pubsub/docs/o
 npm install --save @algoan/pubsub
 ```
 
-## Setup for simulator
+## Usage
 
-You need to have a google account and have installed gcloud sdk.
+### Google Cloud PubSub
 
-Then, you need to install the simulator with:
+#### Run tests
+
+To run tests or to try the PubSubFactory class, you need to have a google account and have installed gcloud sdk.
+
+Then, to install the [Google PubSub simulator](https://cloud.google.com/pubsub/docs/emulator), run:
 
 ```shell
 gcloud components install pubsub-emulator
 gcloud components update
 ```
 
-## Launch the tests
-
-Start the tests in another terminal with:
+Start tests running:
 
 ```shell
 npm test
 ```
 
-It will launch a Google PubSub emulator
+It will launch a Google PubSub emulator thanks to the [google-pubsub-emulator](https://github.com/ert78gb/google-pubsub-emulator) library.
 
-## Usage
+
+#### Example
 
 To create a PubSub instance using Google Cloud:
 
 ```typescript
-import { ExtendedMessage, PubSub, PubSubFactory, Transport } from '@algoan/pubsub'
+import { EmittedMessage, GCPubSub, PubSubFactory, Transport } from '@algoan/pubsub'
 
-const pubSub: PubSub = PubSubFactory.create({
+const pubSub: GCPubSub = PubSubFactory.create({
   transport: Transport.GOOGLE_PUBSUB,
   options: {
     projectId: 'test',
@@ -49,7 +52,7 @@ const topicName: string = 'some_topic';
 
 await pubsub.listen(topicName, {
   autoAck: true,
-  onMessage: (data: ExtendedMessage<{foo: string}>) => {
+  onMessage: (data: EmittedMessage<{foo: string}>) => {
     console.log(data.parsedData); // { foo: 'bar', time: {Date.now}, _eventName: 'some_topic' }
     // do whatever you want. The message has already been acknowledged
   },
@@ -80,27 +83,34 @@ The only static method from the `PubSubFactory` class. It initiates a new PubSub
   - `namespace`: Add a namespace property to [Message attributes](https://googleapis.dev/nodejs/pubsub/latest/google.pubsub.v1.html#.PubsubMessage) when publishing on a topic.
   - `environment`: Add a environment property to [Message attributes](https://googleapis.dev/nodejs/pubsub/latest/google.pubsub.v1.html#.PubsubMessage) when publishing on a topic.
 
-### `pubsub.listen(event, options)`
+### `pubsub.listen(event, opts)`
 
 Listen to a specific event.
 
 _NOTE_: It only uses the [Google Cloud subscription pull](https://cloud.google.com/pubsub/docs/pull) delivery for now.
 
 - `event`: Name of the event.
-- `options`: Options related to the Listener method
+- `opts`: Options related to the Listener method
   - `onMessage`: Method called when receiving a message
   - `onError`: Method called when an error occurs
-  - `autoAck`: Automatically ACK an event as soon as it is received (default to `true`)
-  - `subscriptionOptions`: Options applied to the subscription (have a look at [Subscription options](https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#get))
-  - `topicOptions`: Options applied to the created topic (have a look at [Topic options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#get))
+  - `options`: Option related to the chosen transport
 
-### `pubsub.emit(event, payload, options)`
+If the chosen transport is Google Cloud PubSub, then `options` would be:
+
+- `autoAck`: Automatically ACK an event as soon as it is received (default to `true`)
+- `subscriptionOptions`: Options applied to the subscription (have a look at [Subscription options](https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#get))
+- `topicOptions`: Options applied to the created topic (have a look at [Topic options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#get))
+
+### `pubsub.emit(event, payload, opts)`
 
 Emit a specific event with a payload. It added attributes in the message if you have added a namespace or an environment when setting the `PubSubFactory` class. It also adds an `_eventName` and a `time` property in the emitted `payload`.
 
 - `event`: Name of the event to emit.
 - `payload`: Payload to send. It will be buffered by Google, and then parsed by the [listen](#pubsublistenevent-options) method.
-- `options`: Options related to the Emit method
-  - `customAttributes`: Add custom attributes which will be stored in the `message.attributes` property.
-  - `subscriptionOptions`: Options applied to the subscription (have a look at [Subscription options](https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#get))
-  - `topicOptions`: Options applied to the created topic (have a look at [Topic options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#get))
+- `opts`: Options related to the Emit method
+  - `metadata`: Custom metadata added to the message
+  - `options`: Option related to the chosen transport
+
+If the chosen transport is Google Cloud PubSub, then `options` would be:
+
+- `topicOptions`: Options applied to the created topic (have a look at [Topic options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#get))

@@ -1,6 +1,7 @@
-import { Attributes, GetSubscriptionOptions, GetTopicOptions, Subscription, Topic } from '@google-cloud/pubsub';
+import { GetSubscriptionOptions, GetTopicOptions, PubSub as GPubSub, Subscription, Topic } from '@google-cloud/pubsub';
 import { ClientConfig } from '@google-cloud/pubsub/build/src/pubsub';
-import { ExtendedMessage } from './ExtendedMessage';
+
+import { PubSub } from '..';
 
 /**
  * Extends Google PubSub config
@@ -24,35 +25,18 @@ export type TopicMap = Map<string, Topic>;
 export type SubscriptionMap = Map<string, Subscription>;
 
 /**
- * Options used both in emit and listen methods
+ * PubSub SDK for Google Cloud
  */
-interface Options {
-  subscriptionOptions?: Omit<GetSubscriptionOptions, 'autoCreate'>;
-  topicOptions?: Omit<GetTopicOptions, 'autoCreate'>;
-}
+export type GCPubSub = PubSub<GPubSub, Subscription, GCListenOptions>;
 
 /**
- * Listen options argument
+ * Google Cloud PubSub Listen options
  */
-export interface ListenOptions<T> extends Options {
+export interface GCListenOptions {
+  /** Automatic Acknowledgment */
   autoAck?: boolean;
-  /** Error handler */
-  onError?(error: Error): void;
-  /** Message handler */
-  onMessage?(extendedMessage: ExtendedMessage<T>): void;
-}
-
-/**
- * Emit options argument
- */
-export interface EmitOptions extends Options {
-  customAttributes?: Attributes;
-}
-
-/**
- * Payload in the emitted message
- */
-export interface Payload {
-  _eventName: string;
-  time: number;
+  /** Google PubSub subscription options */
+  subscriptionOptions?: Omit<GetSubscriptionOptions, 'autoCreate'>;
+  /** Google PubSub topic options */
+  topicOptions?: Omit<GetTopicOptions, 'autoCreate'>;
 }
