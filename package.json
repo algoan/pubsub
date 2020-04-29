@@ -38,22 +38,22 @@
     "@semantic-release/git": "^9.0.0",
     "@types/pino": "^6.0.0",
     "@yelloan/tslint": "0.3.0",
-    "ava": "^3.7.0",
+    "ava": "^3.8.1",
     "commitizen": "^4.0.4",
     "cz-conventional-changelog": "^3.0.2",
     "google-pubsub-emulator": "^3.0.2",
     "husky": "^4.2.3",
-    "lint-staged": "^10.0.7",
+    "lint-staged": "^10.2.0",
     "nyc": "15.0.1",
-    "prettier": "^2.0.4",
-    "semantic-release": "17.0.4",
-    "tslint": "^6.1.1",
+    "prettier": "^2.0.5",
+    "semantic-release": "^17.0.7",
+    "tslint": "^6.1.2",
     "tslint-config-prettier": "^1.18.0",
     "typescript": "^3.8.3"
   },
   "dependencies": {
     "@google-cloud/pubsub": "^1.7.2",
-    "pino": "^6.1.1",
+    "pino": "^6.2.1",
     "pino-pretty": "^4.0.0"
   },
   "engines": {
