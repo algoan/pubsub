@@ -1,6 +1,5 @@
 import {
   Attributes,
-  GetSubscriptionOptions,
   GetSubscriptionResponse,
   GetTopicOptions,
   GetTopicResponse,
@@ -13,7 +12,14 @@ import * as Pino from 'pino';
 
 import { EmitOptions, ListenOptions } from '..';
 import { ExtendedMessage } from './ExtendedMessage';
-import { GCListenOptions, GCPubSub, GooglePubSubOptions, SubscriptionMap, TopicMap } from './lib';
+import {
+  GCListenOptions,
+  GCPubSub,
+  GCSubscriptionOptions,
+  GooglePubSubOptions,
+  SubscriptionMap,
+  TopicMap,
+} from './lib';
 
 /**
  * Google PubSub SDK
@@ -200,7 +206,7 @@ export class GoogleCloudPubSub implements GCPubSub {
   private async getOrCreateSubscription(
     name: string,
     topic: Topic,
-    options?: GetSubscriptionOptions,
+    options?: GCSubscriptionOptions,
   ): Promise<Subscription> {
     const subscriptionName: string = this.getSubscriptionName(name);
     const cachedSubscription: Subscription | undefined = this.subscriptions.get(subscriptionName);
@@ -210,8 +216,8 @@ export class GoogleCloudPubSub implements GCPubSub {
     }
 
     const [subscription]: GetSubscriptionResponse = await topic
-      .subscription(subscriptionName)
-      .get({ autoCreate: true, ...options });
+      .subscription(subscriptionName, options?.sub)
+      .get({ autoCreate: true, ...options?.get });
     this.subscriptions.set(subscriptionName, subscription);
 
     return subscription;
