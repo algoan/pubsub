@@ -1,39 +1,14 @@
-## {Title - Taiga/Github issue}
-<!-- If functional task, replace with number of the Taïga User Story or Issue -->
-<!-- - TG-#XXX -->
+<!--- Provide a general summary of your changes in the Title above -->
 
-<!-- If technical task, link with the number of the GitHub Issue -->
-<!-- - Fix #XXX -->
+## Description
+<!--- Describe your changes in detail -->
 
-### How to test ?
+## Motivation and Context
+<!--- Why is this change required? What problem does it solve? -->
+<!--- If it fixes an open issue, please link to the issue here. -->
 
-<!-- Explain how you can test this feature/fix -->
-
-### Description
-<!-- Please be explicit --> 
-
-<!-- ### Bump Version -->
-<!--  Give the new version number, with the date -->
-<!-- - X.X.X (XXXX-XX-XX) -->
-
-<!-- ### Breaking Changes -->
-<!-- ### Bug Fixes -->
-<!-- ### Improvements -->
-<!-- ### Features -->
-
-### Reference
-
-<!-- Taïga/Github issue link -->
-
-
-### TODO
- 
-<!-- List of TODOs before merging the pull request --> 
-#### Before merging
-
-- [ ] ...
-
-<!-- List of TODOs after merging the pull request, must be short --> 
-#### After merging
-
-- [ ] ...
+## Types of changes
+<!--- What types of changes does your code introduce? Put an `x` in all the boxes that apply: -->
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to change)

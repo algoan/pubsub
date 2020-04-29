@@ -93,6 +93,13 @@ test.cb(
       },
       options: {
         autoAck: false,
+        subscriptionOptions: {
+          sub: {
+            streamingOptions: {
+              maxStreams: 1,
+            },
+          },
+        },
       },
     });
 

@@ -1,4 +1,11 @@
-import { GetSubscriptionOptions, GetTopicOptions, PubSub as GPubSub, Subscription, Topic } from '@google-cloud/pubsub';
+import {
+  GetSubscriptionOptions,
+  GetTopicOptions,
+  PubSub as GPubSub,
+  Subscription,
+  SubscriptionOptions,
+  Topic,
+} from '@google-cloud/pubsub';
 import { ClientConfig } from '@google-cloud/pubsub/build/src/pubsub';
 
 import { PubSub } from '..';
@@ -36,7 +43,17 @@ export interface GCListenOptions {
   /** Automatic Acknowledgment */
   autoAck?: boolean;
   /** Google PubSub subscription options */
-  subscriptionOptions?: Omit<GetSubscriptionOptions, 'autoCreate'>;
+  subscriptionOptions?: GCSubscriptionOptions;
   /** Google PubSub topic options */
   topicOptions?: Omit<GetTopicOptions, 'autoCreate'>;
+}
+
+/**
+ * Mix Subscriptions Options interface
+ */
+export interface GCSubscriptionOptions {
+  /** Options applied to the getSubscription: https://googleapis.dev/nodejs/pubsub/latest/v1.SubscriberClient.html#getSubscription */
+  get?: Omit<GetSubscriptionOptions, 'autoCreate'>;
+  /** Options applied to the subscription: https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#setOptions */
+  sub?: SubscriptionOptions;
 }
