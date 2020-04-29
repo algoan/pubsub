@@ -98,7 +98,9 @@ _NOTE_: It only uses the [Google Cloud subscription pull](https://cloud.google.c
 If the chosen transport is Google Cloud PubSub, then `options` would be:
 
 - `autoAck`: Automatically ACK an event as soon as it is received (default to `true`)
-- `subscriptionOptions`: Options applied to the subscription (have a look at [Subscription options](https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#get))
+- `subscriptionOptions`: Options related to the created Subscription:
+  - `get`: Options applied to the getSubscription method (have a look at [Subscription options](https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#get))
+  - `sub`: Options applied to the subscription instance (see also [`setOptions` method](https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#setOptions))
 - `topicOptions`: Options applied to the created topic (have a look at [Topic options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#get))
 
 ### `pubsub.emit(event, payload, opts)`
