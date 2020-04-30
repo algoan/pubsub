@@ -9,7 +9,7 @@
       "outDir": "dist",
       "removeComments": true,
       "noEmit": false,
-      "importHelpers": true,
+      "importHelpers": false,
       "isolatedModules": false,
   
       "strict": true,
@@ -26,7 +26,7 @@
       "moduleResolution": "node",
       "allowSyntheticDefaultImports": false,
   
-      "inlineSourceMap": true,
+      "inlineSourceMap": false,
   
       "experimentalDecorators": true,
       "emitDecoratorMetadata": true
