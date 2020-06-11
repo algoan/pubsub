@@ -144,7 +144,11 @@ export class GoogleCloudPubSub implements GCPubSub {
    * @param payload Payload to share
    * @param opts Emit options
    */
-  public async emit(event: string, data: object, opts: EmitOptions<GCListenOptions> = {}): Promise<string> {
+  public async emit(
+    event: string,
+    data: Record<string, unknown>,
+    opts: EmitOptions<GCListenOptions> = {},
+  ): Promise<string> {
     const topic: Topic = await this.getOrCreateTopic(event, opts.options?.topicOptions);
     this.logger.debug(
       {
