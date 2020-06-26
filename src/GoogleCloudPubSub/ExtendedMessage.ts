@@ -9,7 +9,7 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
   /** Message unique identifier */
   public id: string;
   /** Payload sent */
-  public payload: T;
+  public payload: T | { code: string; err: unknown };
   /** Metadata: namespace, environment etc */
   public metadata?: Attributes;
   /** Acknowledgment unique identifier */
@@ -25,8 +25,15 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
 
   constructor(message: Message) {
     this.id = message.id;
-    // tslint:disable-next-line: no-unsafe-any
-    this.payload = JSON.parse(message.data.toString());
+    try {
+      // eslint-disable-next-line @typescript-eslint/tslint/config
+      this.payload = JSON.parse(message.data.toString());
+    } catch (err) {
+      this.payload = {
+        code: 'JSON_PARSE_ERROR_MESSAGE',
+        err,
+      };
+    }
     this.metadata = message.attributes;
     this.ackId = message.ackId;
     this.count = isNaN(Number(message.orderingKey)) ? undefined : Number(message.orderingKey);

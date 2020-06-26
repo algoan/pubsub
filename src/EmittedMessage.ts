@@ -5,7 +5,7 @@ export interface EmittedMessage<T> {
   /** Message unique identifier */
   id: string;
   /** Payload sent */
-  payload: T;
+  payload: T | { code: string; err: unknown };
   /** Metadata: namespace, environment etc */
   metadata?: Metadata;
   /** Acknowledgment unique identifier */
@@ -26,6 +26,6 @@ export interface EmittedMessage<T> {
 export interface Metadata {
   namespace?: string;
   environment?: string;
-  // tslint:disable-next-line: no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
