@@ -57,3 +57,11 @@ export interface GCSubscriptionOptions {
   /** Options applied to the subscription: https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#setOptions */
   sub?: SubscriptionOptions;
 }
+
+/**
+ * Payload interface if a JSON parsing error occurs
+ */
+export interface ErrorPayload {
+  code: string;
+  err: unknown;
+}

@@ -1,7 +1,9 @@
+/* eslint-disable prefer-arrow/prefer-arrow-functions */
+/* eslint-disable no-void */
 import test, { CbExecutionContext, ExecutionContext } from 'ava';
-const Emulator = require('google-pubsub-emulator');
+import { isPayloadError, EmittedMessage, GCPubSub, PubSubFactory, Transport } from '../src';
 
-import { EmittedMessage, GCPubSub, PubSubFactory, Transport } from '../src';
+const Emulator = require('google-pubsub-emulator');
 
 const projectId: string = 'algoan-test';
 
@@ -38,7 +40,12 @@ test.cb('GPS001 - should properly emit and listen', (t: CbExecutionContext): voi
       autoAck: true,
     },
     onMessage(message: EmittedMessage<OnMessage>): void {
-      t.deepEqual(message.payload, {
+      if (isPayloadError(message.payload)) {
+        return t.end('Error in payload');
+      }
+
+      const payload: OnMessage = message.payload;
+      t.deepEqual(payload, {
         hello: 'world',
       });
       t.truthy(message.id);

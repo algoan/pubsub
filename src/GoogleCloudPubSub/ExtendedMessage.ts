@@ -1,6 +1,7 @@
 import { Attributes, Message } from '@google-cloud/pubsub';
 
 import { EmittedMessage } from '..';
+import { ErrorPayload } from './lib';
 
 /**
  * Extends the Google PubSub message class by adding a parsed data getter
@@ -9,7 +10,7 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
   /** Message unique identifier */
   public id: string;
   /** Payload sent */
-  public payload: T | { code: string; err: unknown };
+  public payload: T | ErrorPayload;
   /** Metadata: namespace, environment etc */
   public metadata?: Attributes;
   /** Acknowledgment unique identifier */
