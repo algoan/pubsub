@@ -102,12 +102,7 @@ export class GoogleCloudPubSub implements GCPubSub {
       topic,
       opts.options?.subscriptionOptions,
     );
-    this.logger.debug(
-      {
-        options: opts,
-      },
-      `Listened to topic ${topic.name} with subscription ${subscription.name}`,
-    );
+    this.logger.debug(`Listened to topic ${topic.name} with subscription ${subscription.name}`);
 
     subscription.on('message', (message: Message): void => {
       const extendedMessage: ExtendedMessage<T> = new ExtendedMessage<T>(message);
@@ -153,7 +148,6 @@ export class GoogleCloudPubSub implements GCPubSub {
     this.logger.debug(
       {
         data,
-        options: opts,
       },
       `Found topic ${topic.name} for event ${event}`,
     );
@@ -172,7 +166,6 @@ export class GoogleCloudPubSub implements GCPubSub {
       {
         data,
         attributes,
-        options: opts,
       },
       `Sending payload to Topic ${topic.name}`,
     );
