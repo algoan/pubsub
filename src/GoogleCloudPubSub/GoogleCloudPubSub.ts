@@ -82,6 +82,7 @@ export class GoogleCloudPubSub implements GCPubSub {
     this.logger = Pino({
       prettyPrint: process.env.NODE_ENV !== 'production',
       level: options.debug === true ? 'debug' : 'silent',
+      ...options.pinoOptions,
     });
   }
 
