@@ -20,6 +20,8 @@ export interface EmittedMessage<T> {
   receivedAt: Date;
   /** Duration in ms */
   duration: number;
+  /** Acknowledge method for pubsub providers with a manual acknowledgment */
+  ack(): void;
 }
 
 /**
