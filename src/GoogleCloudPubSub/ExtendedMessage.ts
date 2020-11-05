@@ -23,6 +23,8 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
   public receivedAt: Date;
   /** Duration in ms */
   public duration: number;
+  /** GoogleCloud ack method, is defined if autoAck is disable */
+  private readonly originalMessage: Message;
 
   constructor(message: Message) {
     this.id = message.id;
@@ -41,5 +43,14 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
     this.emittedAt = message.publishTime;
     this.receivedAt = new Date(message.received);
     this.duration = message.received - this.emittedAt.valueOf();
+    this.originalMessage = message;
+  }
+
+  /**
+   * Shared ack() method.
+   * Use it if "autoAck" is disabled
+   */
+  public ack(): void {
+    this.originalMessage.ack();
   }
 }
