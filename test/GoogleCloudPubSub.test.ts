@@ -213,7 +213,7 @@ test('GPS004 - should not add prefix to subscription and topic', async (t: Execu
 });
 
 test('GPS005 - should add separator to subscription and topic', async (t: ExecutionContext): Promise<void> => {
-  const topicName: string = 'topic_1';
+  const topicName: string = 'topic_3';
   const pubsub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
@@ -234,7 +234,7 @@ test('GPS005 - should add separator to subscription and topic', async (t: Execut
 });
 
 test('GPS006 - should not add separator to subscription and topic', async (t: ExecutionContext): Promise<void> => {
-  const topicName: string = 'topic_1';
+  const topicName: string = 'topic_4';
   const pubsub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
