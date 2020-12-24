@@ -2,7 +2,8 @@
 /* eslint-disable no-void */
 import test, { CbExecutionContext, ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
-import { isPayloadError, EmittedMessage, GCPubSub, PubSubFactory, Transport } from '../src';
+
+import { EmittedMessage, GCPubSub, isPayloadError, PubSubFactory, Transport } from '../src';
 
 const Emulator = require('google-pubsub-emulator');
 
@@ -209,4 +210,45 @@ test('GPS004 - should not add prefix to subscription and topic', async (t: Execu
   t.false(isSubcriptionExisting);
   t.true(isTopicExistingWithoutPrefix);
   t.true(isSubcriptionExistingWithoutPrefix);
+});
+
+test('GPS005 - should add separator to subscription and topic', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = 'topic_1';
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      topicsPrefix: 'algoan',
+      subscriptionsPrefix: 'test-app',
+      subscriptionsSeparator: '-'
+    },
+  });
+
+  await pubsub.listen(topicName);
+
+  const [isTopicExisting] = await pubsub.client.topic(`algoan+${topicName}`).exists();
+  const [isSubcriptionExisting] = await pubsub.client.subscription(`test-app-${topicName}`).exists();
+
+  t.true(isTopicExisting);
+  t.true(isSubcriptionExisting);
+});
+
+test('GPS006 - should not add separator to subscription and topic', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = 'topic_1';
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      topicsPrefix: 'algoan',
+      subscriptionsPrefix: 'test-app',
+    },
+  });
+
+  await pubsub.listen(topicName);
+
+  const [isTopicExisting] = await pubsub.client.topic(`algoan+${topicName}`).exists();
+  const [isSubcriptionExisting] = await pubsub.client.subscription(`test-app%${topicName}`).exists();
+
+  t.true(isTopicExisting);
+  t.true(isSubcriptionExisting);
 });

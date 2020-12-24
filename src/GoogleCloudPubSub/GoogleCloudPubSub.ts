@@ -12,14 +12,7 @@ import * as Pino from 'pino';
 
 import { EmitOptions, ListenOptions } from '..';
 import { ExtendedMessage } from './ExtendedMessage';
-import {
-  GCListenOptions,
-  GCPubSub,
-  GCSubscriptionOptions,
-  GooglePubSubOptions,
-  SubscriptionMap,
-  TopicMap,
-} from './lib';
+import { GCListenOptions, GCPubSub, GCSubscriptionOptions, GooglePubSubOptions, SubscriptionMap, TopicMap } from './lib';
 
 /**
  * Google PubSub SDK
@@ -41,6 +34,15 @@ export class GoogleCloudPubSub implements GCPubSub {
    * then subscription names will begin with "app%"
    */
   private readonly subscriptionsPrefix?: string;
+
+
+  /**
+   * Subscription separator
+   * Example: if "subscriptionSeparator = -",
+   * then subscription name will begin with "<subscriptionPrefix>-"
+   * @default %
+   */
+  private readonly subscriptionsSeparator?: string;
 
   /**
    * Topic prefix
@@ -71,9 +73,10 @@ export class GoogleCloudPubSub implements GCPubSub {
    */
   private readonly logger: Pino.Logger;
 
-  constructor(options: GooglePubSubOptions = {}) {
+  constructor(options: GooglePubSubOptions = { subscriptionsSeparator: '%'}) {
     this.client = new GPubSub(options);
     this.subscriptionsPrefix = options.subscriptionsPrefix;
+    this.subscriptionsSeparator = options.subscriptionsSeparator;
     this.topicsPrefix = options.topicsPrefix;
     this.namespace = options.namespace;
     this.environment = options.environment;
@@ -239,7 +242,7 @@ export class GoogleCloudPubSub implements GCPubSub {
    */
   private getSubscriptionName(event: string): string {
     if (this.subscriptionsPrefix !== undefined) {
-      return `${this.subscriptionsPrefix}%${event}`;
+      return `${this.subscriptionsPrefix}${this.subscriptionsSeparator}${event}`
     }
 
     return event;

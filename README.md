@@ -81,6 +81,7 @@ The only static method from the `PubSubFactory` class. It initiates a new PubSub
   - `pinoOptions`: If `debug` is set to true, set the [pino logger options](https://getpino.io/#/docs/api?id=options). Default to `level: debug` and `prettyPrint: true` if `NODE_ENV` is not equal to `production`.
   - `topicsPrefix`: Add a prefix to all created topics. Example: `topicsPrefix: 'my-topic'`, all topics will begin with `my-topic+{your topic name}`.
   - `subscriptionsPrefix`: Add a prefix to all created subscriptions. Example: `subscriptionsPrefix: 'my-sub'`, all topics will begin with `my-sub%{your topic name}`.
+  - `subscriptionsSeparator`: Customize separator between subscriptionsPrefix and topic name. Example: `subscriptionsSeparator: '-'`, all topics will be  `{subscription prefix}-{your topic name} (default to '%')`.
   - `namespace`: Add a namespace property to [Message attributes](https://googleapis.dev/nodejs/pubsub/latest/google.pubsub.v1.html#.PubsubMessage) when publishing on a topic.
   - `environment`: Add a environment property to [Message attributes](https://googleapis.dev/nodejs/pubsub/latest/google.pubsub.v1.html#.PubsubMessage) when publishing on a topic.
 
