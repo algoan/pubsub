@@ -59,6 +59,15 @@ export class GoogleCloudPubSub implements GCPubSub {
   private readonly topicsPrefix?: string;
 
   /**
+   * Topic separator
+   * Example: if "topicsSeparator = -",
+   * then topic names will begin with "<topicsPrefix>-"
+   *
+   * @defaultValue '+'
+   */
+  private readonly topicsSeparator?: string;
+
+  /**
    * An optional namespace
    * Can be useful when emitting an event
    */
@@ -85,6 +94,7 @@ export class GoogleCloudPubSub implements GCPubSub {
     this.subscriptionsPrefix = options.subscriptionsPrefix;
     this.subscriptionsSeparator = options.subscriptionsSeparator !== undefined ? options.subscriptionsSeparator : '%';
     this.topicsPrefix = options.topicsPrefix;
+    this.topicsSeparator = options.topicsSeparator !== undefined ? options.topicsSeparator : '+';
     this.namespace = options.namespace;
     this.environment = options.environment;
     this.topics = new Map();
@@ -237,7 +247,7 @@ export class GoogleCloudPubSub implements GCPubSub {
    */
   private getTopicName(event: string): string {
     if (this.topicsPrefix !== undefined) {
-      return `${this.topicsPrefix}+${event}`;
+      return `${this.topicsPrefix}${this.topicsSeparator}${event}`;
     }
 
     return event;

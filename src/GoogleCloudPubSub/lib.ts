@@ -16,6 +16,7 @@ import { PubSub } from '..';
  */
 export interface GooglePubSubOptions extends ClientConfig {
   topicsPrefix?: string;
+  topicsSeparator?: string;
   subscriptionsPrefix?: string;
   subscriptionsSeparator?: string;
   namespace?: string;

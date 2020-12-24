@@ -252,3 +252,21 @@ test('GPS006 - should not add separator to subscription and topic', async (t: Ex
   t.true(isTopicExisting);
   t.true(isSubcriptionExisting);
 });
+
+test('GPS007 - should add separator to topic name', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = 'topic_5';
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      topicsPrefix: 'algoan',
+      topicsSeparator: '-',
+    },
+  });
+
+  await pubsub.listen(topicName);
+
+  const [isTopicExisting] = await pubsub.client.topic(`algoan-${topicName}`).exists();
+
+  t.true(isTopicExisting);
+});
