@@ -220,7 +220,7 @@ test('GPS005 - should add separator to subscription and topic', async (t: Execut
       projectId,
       topicsPrefix: 'algoan',
       subscriptionsPrefix: 'test-app',
-      subscriptionsSeparator: '-'
+      subscriptionsSeparator: '-',
     },
   });
 
