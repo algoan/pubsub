@@ -80,10 +80,10 @@ export class GoogleCloudPubSub implements GCPubSub {
    */
   private readonly logger: Pino.Logger;
 
-  constructor(options: GooglePubSubOptions = { subscriptionsSeparator: '%' }) {
+  constructor(options: GooglePubSubOptions = {}) {
     this.client = new GPubSub(options);
     this.subscriptionsPrefix = options.subscriptionsPrefix;
-    this.subscriptionsSeparator = options.subscriptionsSeparator;
+    this.subscriptionsSeparator = options.subscriptionsSeparator !== undefined ? options.subscriptionsSeparator : '%';
     this.topicsPrefix = options.topicsPrefix;
     this.namespace = options.namespace;
     this.environment = options.environment;
