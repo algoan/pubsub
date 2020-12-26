@@ -43,11 +43,29 @@ export class GoogleCloudPubSub implements GCPubSub {
   private readonly subscriptionsPrefix?: string;
 
   /**
+   * Subscription separator
+   * Example: if "subscriptionSeparator = -",
+   * then subscription name will begin with "<subscriptionPrefix>-"
+   *
+   * @defaultValue `%`
+   */
+  private readonly subscriptionsSeparator?: string;
+
+  /**
    * Topic prefix
    * Example: if "topicsPrefix = algoan",
    * then topic names will begin with "algoan+"
    */
   private readonly topicsPrefix?: string;
+
+  /**
+   * Topic separator
+   * Example: if "topicsSeparator = -",
+   * then topic names will begin with "<topicsPrefix>-"
+   *
+   * @defaultValue '+'
+   */
+  private readonly topicsSeparator?: string;
 
   /**
    * An optional namespace
@@ -74,7 +92,9 @@ export class GoogleCloudPubSub implements GCPubSub {
   constructor(options: GooglePubSubOptions = {}) {
     this.client = new GPubSub(options);
     this.subscriptionsPrefix = options.subscriptionsPrefix;
+    this.subscriptionsSeparator = options.subscriptionsSeparator !== undefined ? options.subscriptionsSeparator : '%';
     this.topicsPrefix = options.topicsPrefix;
+    this.topicsSeparator = options.topicsSeparator !== undefined ? options.topicsSeparator : '+';
     this.namespace = options.namespace;
     this.environment = options.environment;
     this.topics = new Map();
@@ -227,7 +247,7 @@ export class GoogleCloudPubSub implements GCPubSub {
    */
   private getTopicName(event: string): string {
     if (this.topicsPrefix !== undefined) {
-      return `${this.topicsPrefix}+${event}`;
+      return `${this.topicsPrefix}${this.topicsSeparator}${event}`;
     }
 
     return event;
@@ -239,7 +259,7 @@ export class GoogleCloudPubSub implements GCPubSub {
    */
   private getSubscriptionName(event: string): string {
     if (this.subscriptionsPrefix !== undefined) {
-      return `${this.subscriptionsPrefix}%${event}`;
+      return `${this.subscriptionsPrefix}${this.subscriptionsSeparator}${event}`;
     }
 
     return event;
