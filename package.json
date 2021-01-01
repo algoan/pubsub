@@ -56,7 +56,7 @@
   },
   "dependencies": {
     "@google-cloud/pubsub": "^2.6.0",
-    "pino": "^6.7.0",
+    "pino": "^6.9.0",
     "pino-pretty": "^4.3.0"
   },
   "engines": {
