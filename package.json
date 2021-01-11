@@ -37,7 +37,7 @@
     "@commitlint/cli": "^11.0.0",
     "@commitlint/config-conventional": "^11.0.0",
     "@semantic-release/git": "^9.0.0",
-    "@types/pino": "^6.3.4",
+    "@types/pino": "^6.3.5",
     "@types/sinon": "^9.0.10",
     "@yelloan/tslint": "0.3.0",
     "ava": "^3.14.0",
