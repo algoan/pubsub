@@ -127,12 +127,9 @@ export class GoogleCloudPubSub implements GCPubSub {
 
     subscription.on('message', (message: Message): void => {
       const extendedMessage: ExtendedMessage<T> = new ExtendedMessage<T>(message);
-      const logMessage: ExtendedMessage<T> = new ExtendedMessage<T>(message);
 
-      // eslint-disable-next-line
-      delete (logMessage as any).originalMessage;
       this.logger.debug(
-        logMessage,
+        { ...extendedMessage, originalMessage: undefined },
         `A message has been received for Subscription ${subscription.name} after ${
           message.received - message.publishTime.valueOf()
         } ms`,
