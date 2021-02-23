@@ -43,7 +43,7 @@
     "ava": "^3.14.0",
     "commitizen": "^4.1.5",
     "cz-conventional-changelog": "^3.3.0",
-    "eslint": "^7.16.0",
+    "eslint": "^7.20.0",
     "google-pubsub-emulator": "^4.0.0",
     "husky": "^5.1.1",
     "lint-staged": "^10.5.3",
