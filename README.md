@@ -66,7 +66,7 @@ await pubsub.emit(topicName, { foo: 'bar' });
 
 ### Contribution
 
-This module uses [semantic-release](https://github.com/semantic-release/semantic-release), please follow these [instructions](https://github.com/semantic-release/commit-analyzer#default-rules-matching) to contribute to the project or use `npm run commit`.
+Thank you for your future contribution 😁 Please follow [these instructions](CONTRIBUTING.md) before opening a pull request!
 
 ## API
 
