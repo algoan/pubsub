@@ -24,6 +24,14 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - name: Get GCloud CLI to install pubsub emulator
+      uses: google-github-actions/setup-gcloud@master
+    - name: Update GCloud Components
+      run: gcloud components update --quiet
+    - name: Install GCloud beta
+      run: gcloud components install beta --quiet
+    - name: Install pubsub-emulator
+      run: gcloud components install pubsub-emulator --quiet
     - name: Cache dependencies
       uses: actions/cache@v2
       with:
