@@ -16,7 +16,7 @@ let emulator: any;
 test.before(async () => {
   emulator = new Emulator({
     project: projectId,
-    debug: true,
+    debug: process.env.EMULATOR_DEBUG === 'true',
   });
 
   return emulator.start();
