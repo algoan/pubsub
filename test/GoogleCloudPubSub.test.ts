@@ -4,6 +4,8 @@ import test, { CbExecutionContext, ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 
 import { EmittedMessage, GCPubSub, isPayloadError, PubSubFactory, Transport } from '../src';
+import { OnMessage } from './utils/lib';
+import { generateRandomTopicName } from './utils/tools';
 
 const Emulator = require('google-pubsub-emulator');
 
@@ -11,13 +13,10 @@ const projectId: string = 'algoan-test';
 
 let emulator: any;
 
-interface OnMessage {
-  hello: string;
-}
-
 test.before(async () => {
   emulator = new Emulator({
     project: projectId,
+    debug: process.env.EMULATOR_DEBUG === 'true',
   });
 
   return emulator.start();
@@ -32,7 +31,7 @@ test.after.always(async () => {
 });
 
 test.cb('GPS001 - should properly emit and listen', (t: CbExecutionContext): void => {
-  const topicName: string = 'test_a_created';
+  const topicName: string = generateRandomTopicName();
   const pubSub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
@@ -71,11 +70,11 @@ test.cb('GPS001 - should properly emit and listen', (t: CbExecutionContext): voi
    */
   setTimeout((): void => {
     void pubSub.emit(topicName, { hello: 'world' });
-  }, 500);
+  }, 1000);
 });
 
 test.cb('GPS002 - should properly emit but the ack method is never called - no ack', (t: CbExecutionContext): void => {
-  const topicName: string = 'test_b_created';
+  const topicName: string = generateRandomTopicName();
   const pubSub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
@@ -122,11 +121,11 @@ test.cb('GPS002 - should properly emit but the ack method is never called - no a
    */
   setTimeout((): void => {
     void pubSub.emit(topicName, { hello: 'world' });
-  }, 500);
+  }, 1000);
 });
 
 test.cb('GPS002a - should properly emit and properly ack manually', (t: CbExecutionContext): void => {
-  const topicName: string = 'test_c_created';
+  const topicName: string = generateRandomTopicName();
   const pubSub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
@@ -167,11 +166,11 @@ test.cb('GPS002a - should properly emit and properly ack manually', (t: CbExecut
    */
   setTimeout((): void => {
     void pubSub.emit(topicName, { hello: 'world' });
-  }, 500);
+  }, 1000);
 });
 
 test('GPS003 - should add prefix to subscription and topic', async (t: ExecutionContext): Promise<void> => {
-  const topicName: string = 'topic_1';
+  const topicName: string = generateRandomTopicName();
   const pubsub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
@@ -191,7 +190,7 @@ test('GPS003 - should add prefix to subscription and topic', async (t: Execution
 });
 
 test('GPS004 - should not add prefix to subscription and topic', async (t: ExecutionContext): Promise<void> => {
-  const topicName: string = 'topic_2';
+  const topicName: string = generateRandomTopicName();
   const pubsub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
@@ -213,7 +212,7 @@ test('GPS004 - should not add prefix to subscription and topic', async (t: Execu
 });
 
 test('GPS005 - should add separator to subscription and topic', async (t: ExecutionContext): Promise<void> => {
-  const topicName: string = 'topic_3';
+  const topicName: string = generateRandomTopicName();
   const pubsub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
@@ -234,7 +233,7 @@ test('GPS005 - should add separator to subscription and topic', async (t: Execut
 });
 
 test('GPS006 - should not add separator to subscription and topic', async (t: ExecutionContext): Promise<void> => {
-  const topicName: string = 'topic_4';
+  const topicName: string = generateRandomTopicName();
   const pubsub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {
@@ -254,7 +253,7 @@ test('GPS006 - should not add separator to subscription and topic', async (t: Ex
 });
 
 test('GPS007 - should add separator to topic name', async (t: ExecutionContext): Promise<void> => {
-  const topicName: string = 'topic_5';
+  const topicName: string = generateRandomTopicName();
   const pubsub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
     options: {

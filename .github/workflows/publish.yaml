@@ -28,5 +28,9 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         checkName: test
         ref: ${{ github.event.pull_request.head.sha || github.sha }}
-    - run: npm run semantic-release
+    - name: Run Semantic Release
       if: steps.wait-for-build.outputs.conclusion == 'success'
+      uses: cycjimmy/semantic-release-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_PAT_SEMANTIC_RELEASE }}
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
