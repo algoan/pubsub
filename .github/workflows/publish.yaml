@@ -21,13 +21,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-node-${{ matrix.node-version }}
     - run: npm ci
-    - name: Wait for tests to succeed
-      uses: fountainhead/action-wait-for-check@v1.0.0
-      id: wait-for-build
+    - name: Wait on tests
+      uses: lewagon/wait-on-check-action@v0.2
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        checkName: test
-        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        ref: master
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        checkName: test (14.x)
+        wait-interval: 20 # seconds
     - name: Run Semantic Release
       if: steps.wait-for-build.outputs.conclusion == 'success'
       uses: cycjimmy/semantic-release-action@v2
