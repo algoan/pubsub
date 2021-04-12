@@ -1,5 +1,7 @@
 import {
   Attributes,
+  CreateSubscriptionResponse,
+  ExistsResponse,
   GetSubscriptionResponse,
   GetTopicOptions,
   GetTopicResponse,
@@ -233,9 +235,13 @@ export class GoogleCloudPubSub implements GCPubSub {
       return cachedSubscription;
     }
 
-    const [subscription]: GetSubscriptionResponse = await topic
-      .subscription(subscriptionName, options?.sub)
-      .get({ autoCreate: true, ...options?.get });
+    const sub: Subscription = topic.subscription(subscriptionName, options?.sub);
+    const [exists]: ExistsResponse = await sub.exists();
+
+    const [subscription]: GetSubscriptionResponse | CreateSubscriptionResponse = exists
+      ? await sub.get(options?.get)
+      : await sub.create(options?.create);
+
     this.subscriptions.set(subscriptionName, subscription);
 
     return subscription;

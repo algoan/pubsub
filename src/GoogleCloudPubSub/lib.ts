@@ -1,4 +1,5 @@
 import {
+  CreateSubscriptionOptions,
   GetSubscriptionOptions,
   GetTopicOptions,
   PubSub as GPubSub,
@@ -60,6 +61,8 @@ export interface GCSubscriptionOptions {
   get?: Omit<GetSubscriptionOptions, 'autoCreate'>;
   /** Options applied to the subscription: https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#setOptions */
   sub?: SubscriptionOptions;
+  /** Options applied to the createSubscription  */
+  create?: CreateSubscriptionOptions;
 }
 
 /**
