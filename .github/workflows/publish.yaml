@@ -29,8 +29,8 @@ jobs:
         check-name: test (14.x)
         wait-interval: 20 # seconds
         allowed-conclusions: success
-    - name: Run Semantic Release
-      uses: cycjimmy/semantic-release-action@v2
+    - run: npm run semantic-release
+      name: Run Semantic Release
       env:
-        GITHUB_TOKEN: ${{ secrets.GH_PAT_SEMANTIC_RELEASE }}
         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_PAT_SEMANTIC_RELEASE }}
