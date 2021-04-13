@@ -21,6 +21,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-node-${{ matrix.node-version }}
     - run: npm ci
+    - run: npm run compile
     - name: Wait on tests
       uses: lewagon/wait-on-check-action@v0.2
       with:
@@ -33,4 +34,4 @@ jobs:
       name: Run Semantic Release
       env:
         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        GITHUB_TOKEN: ${{ secrets.GH_PAT_SEMANTIC_RELEASE }}
+        GITHUB_TOKEN: ${{ secrets.GH_PAT_SEMANTIC_RELEASE }}
