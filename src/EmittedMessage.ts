@@ -26,6 +26,8 @@ export interface EmittedMessage<T> {
   modAck(deadline: number): void;
   /** Not-Acknowledge method for pubsub providers with a manual acknowledgment */
   nack(): void;
+  /** Getter for retrieving the original message for custom use case */
+  getOriginalMessage(): void;
 }
 
 /**

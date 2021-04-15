@@ -69,4 +69,11 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
   public nack(): void {
     this.originalMessage.nack();
   }
+  /**
+   * Getter for retrieving the original message.
+   * Use it if extended message is not helpful
+   */
+  public getOriginalMessage(): Message {
+    return this.originalMessage;
+  }
 }

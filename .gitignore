@@ -4,3 +4,7 @@ dist
 .nyc_output/
 coverage/
 creds.json
+
+#editors
+.idea
+.vscode
