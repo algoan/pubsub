@@ -44,7 +44,7 @@ test.cb('GPS001 - should properly emit and listen', (t: CbExecutionContext): voi
       autoAck: true,
     },
     onMessage(message: EmittedMessage<OnMessage>): void {
-      const spy: sinon.SinonSpy = sinon.spy((message as any).originalMessage, 'ack');
+      const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
       if (isPayloadError(message.payload)) {
         return t.end('Error in payload');
       }
@@ -86,7 +86,7 @@ test.cb('GPS002 - should properly emit but the ack method is never called - no a
 
   void pubSub.listen(topicName, {
     onMessage(message: EmittedMessage<OnMessage>): void {
-      const spy: sinon.SinonSpy = sinon.spy((message as any).originalMessage, 'ack');
+      const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
       t.deepEqual(message.payload, {
         hello: 'world',
       });
@@ -137,7 +137,7 @@ test.cb('GPS002a - should properly emit and properly ack manually', (t: CbExecut
 
   void pubSub.listen(topicName, {
     onMessage(message: EmittedMessage<OnMessage>): void {
-      const spy: sinon.SinonSpy = sinon.spy((message as any).originalMessage, 'ack');
+      const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
       message.ack();
       t.deepEqual(message.payload, {
         hello: 'world',

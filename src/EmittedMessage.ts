@@ -1,4 +1,5 @@
 import { ErrorPayload } from './GoogleCloudPubSub';
+import { Message } from '@google-cloud/pubsub';
 
 /**
  * Message emitted by the PubSub
@@ -22,6 +23,12 @@ export interface EmittedMessage<T> {
   duration: number;
   /** Acknowledge method for pubsub providers with a manual acknowledgment */
   ack(): void;
+  /** Modify Acknowledge method for pubsub providers with a manual acknowledgment */
+  modAck(deadline: number): void;
+  /** Not-Acknowledge method for pubsub providers with a manual acknowledgment */
+  nack(): void;
+  /** Getter for retrieving the original message for custom use case */
+  getOriginalMessage(): Message;
 }
 
 /**
