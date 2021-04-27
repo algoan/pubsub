@@ -228,7 +228,7 @@ export class GoogleCloudPubSub implements GCPubSub {
     topic: Topic,
     options?: GCSubscriptionOptions,
   ): Promise<Subscription> {
-    const subscriptionName: string = this.getSubscriptionName(name);
+    const subscriptionName: string = options?.name ?? this.getSubscriptionName(name);
     const cachedSubscription: Subscription | undefined = this.subscriptions.get(subscriptionName);
 
     if (cachedSubscription !== undefined) {
