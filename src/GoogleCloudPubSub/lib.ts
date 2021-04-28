@@ -57,6 +57,8 @@ export interface GCListenOptions {
  * Mix Subscriptions Options interface
  */
 export interface GCSubscriptionOptions {
+  /** Subscription name. Default to topic name if not provided */
+  name?: string;
   /** Options applied to the getSubscription: https://googleapis.dev/nodejs/pubsub/latest/v1.SubscriberClient.html#getSubscription */
   get?: Omit<GetSubscriptionOptions, 'autoCreate'>;
   /** Options applied to the subscription: https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#setOptions */

@@ -53,7 +53,7 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
   public ack(): void {
     this.originalMessage.ack();
   }
-  
+
   /**
    * Shared modAck() method.
    * Use it if "autoAck" is disabled
@@ -61,7 +61,7 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
   public modAck(deadline: number): void {
     this.originalMessage.modAck(deadline);
   }
-  
+
   /**
    * Shared nack() method.
    * Use it if "autoAck" is disabled
