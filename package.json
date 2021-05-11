@@ -58,8 +58,8 @@
   },
   "dependencies": {
     "@google-cloud/pubsub": "^2.11.0",
-    "pino": "^6.11.2",
-    "pino-pretty": "^4.7.1"
+    "pino": "^6.11.3",
+    "pino-pretty": "^4.8.0"
   },
   "engines": {
     "node": ">=10.16.0"
