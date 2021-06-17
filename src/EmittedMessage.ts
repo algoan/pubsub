@@ -1,5 +1,5 @@
-import { ErrorPayload } from './GoogleCloudPubSub';
 import { Message } from '@google-cloud/pubsub';
+import { ErrorPayload } from './GoogleCloudPubSub';
 
 /**
  * Message emitted by the PubSub
@@ -47,4 +47,4 @@ export interface Metadata {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/tslint/config
 export const isPayloadError = <T>(payload: T | ErrorPayload): payload is ErrorPayload =>
-  'code' in payload && 'error' in payload;
+  'code' in payload && 'err' in payload;
