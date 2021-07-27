@@ -36,7 +36,7 @@
     "@commitlint/cli": "^12.1.4",
     "@commitlint/config-conventional": "^12.1.4",
     "@semantic-release/git": "^9.0.0",
-    "@types/pino": "^6.3.9",
+    "@types/pino": "^6.3.10",
     "@types/sinon": "^10.0.2",
     "@types/uuid": "^8.3.1",
     "@yelloan/tslint": "0.3.0",
