@@ -8,7 +8,7 @@ import {
   Topic,
 } from '@google-cloud/pubsub';
 import { ClientConfig } from '@google-cloud/pubsub/build/src/pubsub';
-import { LoggerOptions } from 'pino';
+import { pino } from 'pino';
 
 import { PubSub } from '..';
 
@@ -23,7 +23,7 @@ export interface GooglePubSubOptions extends ClientConfig {
   namespace?: string;
   environment?: string;
   debug?: boolean;
-  pinoOptions?: LoggerOptions;
+  pinoOptions?: pino.LoggerOptions;
 }
 
 /**

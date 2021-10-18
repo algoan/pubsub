@@ -10,7 +10,7 @@ import {
   Subscription,
   Topic,
 } from '@google-cloud/pubsub';
-import * as Pino from 'pino';
+import { pino } from 'pino';
 
 import { EmitOptions, ListenOptions } from '..';
 import { ExtendedMessage } from './ExtendedMessage';
@@ -89,7 +89,7 @@ export class GoogleCloudPubSub implements GCPubSub {
   /**
    * Logger
    */
-  private readonly logger: Pino.Logger;
+  private readonly logger: pino.Logger;
 
   constructor(options: GooglePubSubOptions = {}) {
     this.client = new GPubSub(options);
@@ -101,8 +101,7 @@ export class GoogleCloudPubSub implements GCPubSub {
     this.environment = options.environment;
     this.topics = new Map();
     this.subscriptions = new Map();
-    this.logger = Pino({
-      prettyPrint: process.env.NODE_ENV !== 'production',
+    this.logger = pino({
       level: options.debug === true ? 'debug' : 'silent',
       ...options.pinoOptions,
     });
