@@ -36,7 +36,6 @@
     "@commitlint/cli": "^12.1.4",
     "@commitlint/config-conventional": "^12.1.4",
     "@semantic-release/git": "^9.0.0",
-    "@types/pino": "^6.3.11",
     "@types/sinon": "^10.0.4",
     "@types/uuid": "^8.3.1",
     "@yelloan/tslint": "0.3.0",
@@ -58,8 +57,7 @@
   },
   "dependencies": {
     "@google-cloud/pubsub": "^2.18.1",
-    "pino": "^6.12.0",
-    "pino-pretty": "^5.1.2"
+    "pino": "^7.0.2"
   },
   "engines": {
     "node": ">=10.16.0"
