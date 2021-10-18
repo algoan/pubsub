@@ -13,13 +13,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: '14.x'
     - name: Cache dependencies
       uses: actions/cache@v2
       with:
         path: ~/.npm
-        key: ${{runner.os}}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-${{ matrix.node-version }}
+        key: ${{runner.os}}-node-14.x-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: ${{ runner.os }}-node-14.x
     - run: npm ci
     - run: npm run compile
     - name: Wait on tests
