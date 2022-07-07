@@ -1,4 +1,5 @@
-import { EmittedMessage, Metadata } from './EmittedMessage';
+import { Metadata } from './EmittedMessage';
+import { ExtendedMessage } from './GoogleCloudPubSub';
 
 /**
  * PubSub generic interface
@@ -39,7 +40,7 @@ export interface ListenOptions<T, Options> {
   /** Error handler */
   onError?(error: Error): void;
   /** Message handler */
-  onMessage?(extendedMessage: EmittedMessage<T>): void;
+  onMessage?(extendedMessage: ExtendedMessage<T>): void;
   /** Options */
   options?: Options;
 }
