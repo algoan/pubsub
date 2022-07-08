@@ -43,7 +43,7 @@
     "commitizen": "^4.2.4",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.19.0",
-    "google-pubsub-emulator": "^5.0.0",
+    "google-pubsub-emulator": "git+https://github.com/ert78gb/google-pubsub-emulator#4aa0ed1b8ef0e8157208384c3f2fc2c8dad1e8b1",
     "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
     "nyc": "^15.1.0",
@@ -56,11 +56,11 @@
     "uuid": "^8.3.2"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "^2.19.4",
+    "@google-cloud/pubsub": "^3.0.1",
     "pino": "^8.1.0"
   },
   "engines": {
-    "node": ">=10.16.0"
+    "node": "^14 || ^16 || ^17 || ^18"
   },
   "ava": {
     "files": [
