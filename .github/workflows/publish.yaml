@@ -12,17 +12,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v3
       with:
-        node-version: '14.x'
-    - name: Cache dependencies
-      uses: actions/cache@v2
-      with:
-        path: ~/.npm
-        key: ${{runner.os}}-node-14.x-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: ${{ runner.os }}-node-14.x
+        node-version: '16.x'
+        cache: 'npm'
+    - run: npm i -g npm
     - run: npm ci
     - run: npm run compile
     - name: Wait on tests
@@ -30,7 +28,7 @@ jobs:
       with:
         ref: master
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        check-name: test (14.x)
+        check-name: test (16.x)
         wait-interval: 20 # seconds
         allowed-conclusions: success
     - run: npm run semantic-release

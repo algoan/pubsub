@@ -19,11 +19,12 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
+        cache: 'npm'
     - name: Get GCloud CLI to install pubsub emulator
       uses: google-github-actions/setup-gcloud@v0
     - name: Update GCloud Components
@@ -32,12 +33,6 @@ jobs:
       run: gcloud components install beta --quiet
     - name: Install pubsub-emulator
       run: gcloud components install pubsub-emulator --quiet
-    - name: Cache dependencies
-      uses: actions/cache@v2
-      with:
-        path: ~/.npm
-        key: ${{runner.os}}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-${{ matrix.node-version }}
+    - run: npm i -g npm
     - run: npm i
     - run: npm run cover
