@@ -44,7 +44,7 @@
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.26.0",
     "google-pubsub-emulator": "git+https://github.com/ert78gb/google-pubsub-emulator#4aa0ed1b8ef0e8157208384c3f2fc2c8dad1e8b1",
-    "husky": "^8.0.1",
+    "husky": "^8.0.2",
     "lint-staged": "^13.0.3",
     "nyc": "^15.1.0",
     "prettier": "^2.7.1",
