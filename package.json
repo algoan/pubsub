@@ -1,6 +1,6 @@
 {
   "name": "@algoan/pubsub",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "description": "PubSub Library for algoan",
   "main": "./dist/src/index.js",
   "typings": "./dist/src/index.d.ts",
