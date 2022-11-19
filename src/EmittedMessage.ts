@@ -46,5 +46,5 @@ export interface Metadata {
  * @param payload
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/tslint/config
-export const isPayloadError = <T>(payload: T | ErrorPayload): payload is ErrorPayload =>
+export const isPayloadError = <T extends object>(payload: T | ErrorPayload): payload is ErrorPayload =>
   'code' in payload && 'err' in payload;
