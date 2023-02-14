@@ -32,7 +32,7 @@
   "license": "ISC",
   "devDependencies": {
     "@algoan/eslint-config": "^1.1.6",
-    "@ava/typescript": "^2.0.0",
+    "@ava/typescript": "^3.0.1",
     "@commitlint/cli": "^17.4.3",
     "@commitlint/config-conventional": "^17.4.3",
     "@semantic-release/git": "^10.0.1",
