@@ -2,7 +2,15 @@
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
-      "@semantic-release/npm",
+      [
+        "@amanda-mitchell/semantic-release-npm-multiple",
+        {
+          "registries": {
+            "github": {},
+            "npm": {}
+          }
+        }
+      ],
       "@semantic-release/github",
       ["@semantic-release/git", {
         "assets": ["package.json", "package-lock.json"],
