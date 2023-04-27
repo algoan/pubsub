@@ -31,7 +31,7 @@
   "author": "algoan",
   "license": "ISC",
   "devDependencies": {
-    "@algoan/eslint-config": "^1.1.6",
+    "@algoan/eslint-config": "^1.1.7",
     "@amanda-mitchell/semantic-release-npm-multiple": "^3.7.0",
     "@ava/typescript": "^2.0.0",
     "@commitlint/cli": "^17.6.1",
@@ -46,7 +46,7 @@
     "eslint": "^8.36.0",
     "google-pubsub-emulator": "git+https://github.com/ert78gb/google-pubsub-emulator#4aa0ed1b8ef0e8157208384c3f2fc2c8dad1e8b1",
     "husky": "^8.0.3",
-    "lint-staged": "^13.2.0",
+    "lint-staged": "^13.2.2",
     "nyc": "^15.1.0",
     "prettier": "^2.8.8",
     "rimraf": "^4.4.1",
@@ -57,7 +57,7 @@
     "uuid": "^9.0.0"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "^3.4.1",
+    "@google-cloud/pubsub": "^3.5.1",
     "pino": "^8.11.0"
   },
   "engines": {

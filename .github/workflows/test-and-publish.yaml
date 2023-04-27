@@ -1,13 +1,21 @@
 # This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
-name: Algoan PubSub Test Workflow
+name: Algoan PubSub Test and Publish Workflow
 
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag or commit SHA1 to build'
+        required: false
+        type: string
+        default: master
+    
 
 jobs:
   test:
@@ -36,3 +44,31 @@ jobs:
     - run: npm i -g npm
     - run: npm i
     - run: npm run cover
+
+  publish:
+    runs-on: ubuntu-latest
+    name: Publish @algoan/pubsub to NPM
+    needs:
+      - test
+    if: github.event_name == "workflow_dispatch"
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        ref: ${{ inputs.ref }}
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+    - run: npm i -g npm
+    - run: npm ci
+    - run: npm run compile
+    - run: npm run semantic-release
+      name: Run Semantic Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_PAT_SEMANTIC_RELEASE }}
+        GITHUB_NPM_CONFIG_REGISTRY: https://npm.pkg.github.com/
+        GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NPM_NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+        NPM_NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
