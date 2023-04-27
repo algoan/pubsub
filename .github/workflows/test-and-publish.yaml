@@ -50,7 +50,7 @@ jobs:
     name: Publish @algoan/pubsub to NPM
     needs:
       - test
-    if: github.event_name == "workflow_dispatch"
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
     - uses: actions/checkout@v3
       with:
