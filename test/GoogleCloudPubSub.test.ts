@@ -373,3 +373,44 @@ test('GPS008 - should create subscription with a different name', async (t: Exec
   t.true(isTopicExisting);
   t.true(isSubscriptionExisting);
 });
+
+test('GPS009 - should not create a subscription or a topic', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = generateRandomTopicName();
+  const customSubscriptionName: string = 'custom_name';
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      topicsPrefix: 'algoan',
+      topicsSeparator: '-',
+    },
+  });
+
+  try {
+    await pubsub.listen(topicName, {
+      options: {
+        subscriptionOptions: {
+          name: customSubscriptionName,
+        },
+        topicOptions: {
+          autoCreate: false,
+        },
+      },
+    });
+
+    t.fail('This promise is not supposed to be resolved, since the topic does not exist!');
+  } catch (err) {
+    t.is((err as any)?.details, 'Topic not found');
+  }
+
+  const [topics] = await pubsub.client.getTopics();
+  const [subscriptions] = await pubsub.client.getSubscriptions();
+  t.is(
+    topics.find((topic) => topic.name === `projects/${projectId}/topics/${topicName}`),
+    undefined,
+  );
+  t.is(
+    subscriptions.find((sub) => sub.name === `projects/${projectId}/subscriptions/${customSubscriptionName}`),
+    undefined,
+  );
+});

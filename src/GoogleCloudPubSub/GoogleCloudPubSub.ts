@@ -213,12 +213,13 @@ export class GoogleCloudPubSub implements GCPubSub {
   ): Promise<Topic> {
     const topicName: string = this.getTopicName(name);
     const cachedTopic: Topic | undefined = this.topics.get(topicName);
+    const topicOptions = { autoCreate: true, ...getTopicOptions };
 
     if (cachedTopic !== undefined) {
       return cachedTopic;
     }
 
-    const [topic]: GetTopicResponse = await this.client.topic(topicName).get({ autoCreate: true, ...getTopicOptions });
+    const [topic]: GetTopicResponse = await this.client.topic(topicName).get(topicOptions);
 
     if (publishOptions) {
       topic.setPublishOptions(publishOptions);
