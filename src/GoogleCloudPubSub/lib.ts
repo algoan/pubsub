@@ -54,8 +54,8 @@ export interface GCListenOptions {
   topicOptions?: Omit<GetTopicOptions, 'autoCreate'>;
   /** Publishing message options */
   messageOptions?: Omit<MessageOptions, 'json' | 'data'>;
-  /** Publisher options */
-  publisherOptions?: PublishOptions;
+  /** Topic Publish options */
+  publishOptions?: PublishOptions;
 }
 
 /**

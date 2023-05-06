@@ -119,7 +119,7 @@ test.cb('GPS001b - should properly emit and listen with ordering key', (t: CbExe
       { hello: 'world' },
       {
         options: {
-          publisherOptions: {
+          publishOptions: {
             messageOrdering: true,
           },
           messageOptions: {
