@@ -51,7 +51,7 @@ export interface GCListenOptions {
   /** Google PubSub subscription options */
   subscriptionOptions?: GCSubscriptionOptions;
   /** Google PubSub topic options */
-  topicOptions?: Omit<GetTopicOptions, 'autoCreate'>;
+  topicOptions?: GetTopicOptions;
   /** Publishing message options */
   messageOptions?: Omit<MessageOptions, 'json' | 'data'>;
   /** Topic Publish options */
@@ -65,7 +65,7 @@ export interface GCSubscriptionOptions {
   /** Subscription name. Default to topic name if not provided */
   name?: string;
   /** Options applied to the getSubscription: https://googleapis.dev/nodejs/pubsub/latest/v1.SubscriberClient.html#getSubscription */
-  get?: Omit<GetSubscriptionOptions, 'autoCreate'>;
+  get?: GetSubscriptionOptions;
   /** Options applied to the subscription: https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#setOptions */
   sub?: SubscriptionOptions;
   /** Options applied to the createSubscription  */
