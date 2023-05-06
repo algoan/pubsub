@@ -21,6 +21,8 @@ export interface EmittedMessage<T> {
   receivedAt: Date;
   /** Duration in ms */
   duration: number;
+  /** Ordering Key */
+  orderingKey?: string;
   /** Acknowledge method for pubsub providers with a manual acknowledgment */
   ack(): void;
   /** Modify Acknowledge method for pubsub providers with a manual acknowledgment */

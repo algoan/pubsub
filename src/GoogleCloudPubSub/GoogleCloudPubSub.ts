@@ -9,6 +9,7 @@ import {
   PubSub as GPubSub,
   Subscription,
   Topic,
+  PublishOptions,
 } from '@google-cloud/pubsub';
 import { pino } from 'pino';
 
@@ -166,7 +167,7 @@ export class GoogleCloudPubSub implements GCPubSub {
     data: Record<string, unknown>,
     opts: EmitOptions<GCListenOptions> = {},
   ): Promise<string> {
-    const topic: Topic = await this.getOrCreateTopic(event, opts.options?.topicOptions);
+    const topic: Topic = await this.getOrCreateTopic(event, opts.options?.topicOptions, opts.options?.publishOptions);
     this.logger.debug(
       {
         data,
@@ -174,7 +175,7 @@ export class GoogleCloudPubSub implements GCPubSub {
       `Found topic ${topic.name} for event ${event}`,
     );
 
-    const attributes: Attributes = {};
+    const attributes: Attributes = { ...opts.options?.messageOptions?.attributes };
 
     if (this.namespace !== undefined) {
       attributes.namespace = this.namespace;
@@ -192,7 +193,11 @@ export class GoogleCloudPubSub implements GCPubSub {
       `Sending payload to Topic ${topic.name}`,
     );
 
-    return topic.publishJSON(data, { ...attributes, ...opts.metadata });
+    return topic.publishMessage({
+      json: data,
+      attributes: { ...attributes, ...opts.metadata },
+      ...opts.options?.messageOptions,
+    });
   }
 
   /**
@@ -201,7 +206,11 @@ export class GoogleCloudPubSub implements GCPubSub {
    * @tutorial https://github.com/googleapis/nodejs-pubsub/blob/master/samples/createTopic.js
    * @param name Name of the topic
    */
-  private async getOrCreateTopic(name: string, options?: GetTopicOptions): Promise<Topic> {
+  private async getOrCreateTopic(
+    name: string,
+    getTopicOptions?: GetTopicOptions,
+    publishOptions?: PublishOptions,
+  ): Promise<Topic> {
     const topicName: string = this.getTopicName(name);
     const cachedTopic: Topic | undefined = this.topics.get(topicName);
 
@@ -209,7 +218,12 @@ export class GoogleCloudPubSub implements GCPubSub {
       return cachedTopic;
     }
 
-    const [topic]: GetTopicResponse = await this.client.topic(topicName).get({ autoCreate: true, ...options });
+    const [topic]: GetTopicResponse = await this.client.topic(topicName).get({ autoCreate: true, ...getTopicOptions });
+
+    if (publishOptions) {
+      topic.setPublishOptions(publishOptions);
+    }
+
     this.topics.set(topicName, topic);
 
     return topic;

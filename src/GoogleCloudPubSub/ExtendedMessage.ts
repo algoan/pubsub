@@ -16,6 +16,7 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
   /** Acknowledgment unique identifier */
   public ackId?: string;
   /** Counter, if message are ordered */
+  /** @deprecated this parameter is wrong and based on a falsy condition */
   public count?: number;
   /** Date of emission */
   public emittedAt: Date;
@@ -23,6 +24,8 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
   public receivedAt: Date;
   /** Duration in ms */
   public duration: number;
+  /** Ordering key if it exists */
+  public orderingKey?: string;
   /** GoogleCloud ack method, is defined if autoAck is disable */
   private readonly originalMessage: Message;
 
@@ -44,6 +47,7 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
     this.receivedAt = new Date(message.received);
     this.duration = message.received - this.emittedAt.valueOf();
     this.originalMessage = message;
+    this.orderingKey = message.orderingKey;
   }
 
   /**

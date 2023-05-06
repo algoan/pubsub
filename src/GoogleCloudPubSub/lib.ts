@@ -8,6 +8,7 @@ import {
   Topic,
 } from '@google-cloud/pubsub';
 import { ClientConfig } from '@google-cloud/pubsub/build/src/pubsub';
+import { MessageOptions, PublishOptions } from '@google-cloud/pubsub/build/src/topic';
 import { pino } from 'pino';
 
 import { PubSub } from '..';
@@ -51,6 +52,10 @@ export interface GCListenOptions {
   subscriptionOptions?: GCSubscriptionOptions;
   /** Google PubSub topic options */
   topicOptions?: Omit<GetTopicOptions, 'autoCreate'>;
+  /** Publishing message options */
+  messageOptions?: Omit<MessageOptions, 'json' | 'data'>;
+  /** Topic Publish options */
+  publishOptions?: PublishOptions;
 }
 
 /**
