@@ -30,7 +30,7 @@ test.after.always(async () => {
   return emulator.stop();
 });
 
-test.cb('GPS001 - should properly emit and listen', (t: CbExecutionContext): void => {
+test.cb('GPS001a - should properly emit and listen', (t: CbExecutionContext): void => {
   const topicName: string = generateRandomTopicName();
   const pubSub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
@@ -70,6 +70,64 @@ test.cb('GPS001 - should properly emit and listen', (t: CbExecutionContext): voi
    */
   setTimeout((): void => {
     void pubSub.emit(topicName, { hello: 'world' });
+  }, 1000);
+});
+
+test.cb('GPS001b - should properly emit and listen with ordering key', (t: CbExecutionContext): void => {
+  const topicName: string = generateRandomTopicName();
+  const orderingKey: string = 'key1';
+  const pubSub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+    },
+  });
+
+  void pubSub.listen(topicName, {
+    options: {
+      autoAck: true,
+    },
+    onMessage(message: EmittedMessage<OnMessage>): void {
+      const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
+      if (isPayloadError(message.payload)) {
+        return t.end('Error in payload');
+      }
+
+      const payload: OnMessage = message.payload;
+      t.deepEqual(payload, {
+        hello: 'world',
+      });
+      t.falsy(spy.called);
+      t.truthy(message.id);
+      t.truthy(message.ackId);
+      t.truthy(message.emittedAt);
+      t.truthy(message.receivedAt);
+      t.is(message.orderingKey, orderingKey);
+      t.is(message.count, undefined);
+      t.truthy(message.duration);
+      t.pass(`Listen successfully to the topic ${topicName}`);
+      t.end();
+    },
+  });
+
+  /**
+   * The first client emit on a topic
+   */
+  setTimeout((): void => {
+    void pubSub.emit(
+      topicName,
+      { hello: 'world' },
+      {
+        options: {
+          publisherOptions: {
+            messageOrdering: true,
+          },
+          messageOptions: {
+            orderingKey,
+          },
+        },
+      },
+    );
   }, 1000);
 });
 
