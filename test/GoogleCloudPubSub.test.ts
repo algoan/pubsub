@@ -1,9 +1,17 @@
 /* eslint-disable prefer-arrow/prefer-arrow-functions */
 /* eslint-disable no-void */
-import test, { CbExecutionContext, ExecutionContext } from 'ava';
+import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 
-import { EmittedMessage, GCPubSub, isPayloadError, PubSubFactory, Transport } from '../src';
+import {
+  EmitOptions,
+  EmittedMessage,
+  GCListenOptions,
+  GCPubSub,
+  isPayloadError,
+  PubSubFactory,
+  Transport,
+} from '../src';
 import { OnMessage } from './utils/lib';
 import { generateRandomTopicName } from './utils/tools';
 
@@ -30,7 +38,19 @@ test.after.always(async () => {
   return emulator.stop();
 });
 
-test.cb('GPS001a - should properly emit and listen', (t: CbExecutionContext): void => {
+/**
+ * Emit an event after a delay
+ * @param pubSub PubSub client
+ * @param topicName Topic name to publish to
+ * @param delay Delay in ms
+ */
+function emitAfterDelay(pubSub: GCPubSub, topicName: string, topicOptions: EmitOptions<GCListenOptions> = {}): void {
+  setTimeout((): void => {
+    void pubSub.emit(topicName, { hello: 'world' }, topicOptions);
+  }, 1000);
+}
+
+test('GPS001a - should properly emit and listen', async (t: ExecutionContext): Promise<void> => {
   const topicName: string = generateRandomTopicName();
   const pubSub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
@@ -39,41 +59,41 @@ test.cb('GPS001a - should properly emit and listen', (t: CbExecutionContext): vo
     },
   });
 
-  void pubSub.listen(topicName, {
-    options: {
-      autoAck: true,
-    },
-    onMessage(message: EmittedMessage<OnMessage>): void {
-      const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
-      if (isPayloadError(message.payload)) {
-        return t.end('Error in payload');
-      }
+  await new Promise((resolve, reject) => {
+    void pubSub.listen(topicName, {
+      options: {
+        autoAck: true,
+      },
+      onMessage(message: EmittedMessage<OnMessage>): void {
+        const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
+        if (isPayloadError(message.payload)) {
+          return reject('Error in payload');
+        }
 
-      const payload: OnMessage = message.payload;
-      t.deepEqual(payload, {
-        hello: 'world',
-      });
-      t.falsy(spy.called);
-      t.truthy(message.id);
-      t.truthy(message.ackId);
-      t.truthy(message.emittedAt);
-      t.truthy(message.receivedAt);
-      t.is(message.count, 0);
-      t.truthy(message.duration);
-      t.pass(`Listen successfully to the topic ${topicName}`);
-      t.end();
-    },
+        const payload: OnMessage = message.payload;
+        t.deepEqual(payload, {
+          hello: 'world',
+        });
+        t.falsy(spy.called);
+        t.truthy(message.id);
+        t.truthy(message.ackId);
+        t.truthy(message.emittedAt);
+        t.truthy(message.receivedAt);
+        t.is(message.count, 0);
+        t.truthy(message.duration);
+        t.pass(`Listen successfully to the topic ${topicName}`);
+        resolve(true);
+      },
+      onError(error) {
+        reject(error);
+      },
+    });
+
+    emitAfterDelay(pubSub, topicName);
   });
-
-  /**
-   * The first client emit on a topic
-   */
-  setTimeout((): void => {
-    void pubSub.emit(topicName, { hello: 'world' });
-  }, 1000);
 });
 
-test.cb('GPS001b - should properly emit and listen with ordering key', (t: CbExecutionContext): void => {
+test('GPS001b - should properly emit and listen with ordering key', async (t: ExecutionContext): Promise<void> => {
   const topicName: string = generateRandomTopicName();
   const orderingKey: string = 'key1';
   const pubSub: GCPubSub = PubSubFactory.create({
@@ -83,55 +103,51 @@ test.cb('GPS001b - should properly emit and listen with ordering key', (t: CbExe
     },
   });
 
-  void pubSub.listen(topicName, {
-    options: {
-      autoAck: true,
-    },
-    onMessage(message: EmittedMessage<OnMessage>): void {
-      const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
-      if (isPayloadError(message.payload)) {
-        return t.end('Error in payload');
-      }
+  await new Promise((resolve, reject) => {
+    void pubSub.listen(topicName, {
+      options: {
+        autoAck: true,
+      },
+      onMessage(message: EmittedMessage<OnMessage>): void {
+        const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
+        if (isPayloadError(message.payload)) {
+          return reject('Error in payload');
+        }
 
-      const payload: OnMessage = message.payload;
-      t.deepEqual(payload, {
-        hello: 'world',
-      });
-      t.falsy(spy.called);
-      t.truthy(message.id);
-      t.truthy(message.ackId);
-      t.truthy(message.emittedAt);
-      t.truthy(message.receivedAt);
-      t.is(message.orderingKey, orderingKey);
-      t.is(message.count, undefined);
-      t.truthy(message.duration);
-      t.pass(`Listen successfully to the topic ${topicName}`);
-      t.end();
-    },
-  });
+        const payload: OnMessage = message.payload;
+        t.deepEqual(payload, {
+          hello: 'world',
+        });
+        t.falsy(spy.called);
+        t.truthy(message.id);
+        t.truthy(message.ackId);
+        t.truthy(message.emittedAt);
+        t.truthy(message.receivedAt);
+        t.is(message.orderingKey, orderingKey);
+        t.is(message.count, undefined);
+        t.truthy(message.duration);
+        t.pass(`Listen successfully to the topic ${topicName}`);
+        resolve(true);
+      },
+      onError(error) {
+        reject(error);
+      },
+    });
 
-  /**
-   * The first client emit on a topic
-   */
-  setTimeout((): void => {
-    void pubSub.emit(
-      topicName,
-      { hello: 'world' },
-      {
-        options: {
-          publishOptions: {
-            messageOrdering: true,
-          },
-          messageOptions: {
-            orderingKey,
-          },
+    emitAfterDelay(pubSub, topicName, {
+      options: {
+        publishOptions: {
+          messageOrdering: true,
+        },
+        messageOptions: {
+          orderingKey,
         },
       },
-    );
-  }, 1000);
+    });
+  });
 });
 
-test.cb('GPS002 - should properly emit but the ack method is never called - no ack', (t: CbExecutionContext): void => {
+test('GPS002 - should properly emit but the ack method is never called - no ack', async (t: ExecutionContext): Promise<void> => {
   const topicName: string = generateRandomTopicName();
   const pubSub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
@@ -142,47 +158,47 @@ test.cb('GPS002 - should properly emit but the ack method is never called - no a
     },
   });
 
-  void pubSub.listen(topicName, {
-    onMessage(message: EmittedMessage<OnMessage>): void {
-      const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
-      t.deepEqual(message.payload, {
-        hello: 'world',
-      });
-      t.deepEqual(message.metadata, {
-        namespace: 'test-app',
-        environment: 'test',
-      });
-      t.falsy(spy.called);
-      t.truthy(message.id);
-      t.truthy(message.ackId);
-      t.truthy(message.emittedAt);
-      t.truthy(message.receivedAt);
-      t.is(message.count, 0);
-      t.truthy(message.duration);
-      t.pass(`Listen successfully to the topic ${topicName}`);
-      t.end();
-    },
-    options: {
-      autoAck: false,
-      subscriptionOptions: {
-        sub: {
-          streamingOptions: {
-            maxStreams: 1,
+  await new Promise((resolve, reject) => {
+    void pubSub.listen(topicName, {
+      onMessage(message: EmittedMessage<OnMessage>): void {
+        const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
+        t.deepEqual(message.payload, {
+          hello: 'world',
+        });
+        t.deepEqual(message.metadata, {
+          namespace: 'test-app',
+          environment: 'test',
+        });
+        t.falsy(spy.called);
+        t.truthy(message.id);
+        t.truthy(message.ackId);
+        t.truthy(message.emittedAt);
+        t.truthy(message.receivedAt);
+        t.is(message.count, 0);
+        t.truthy(message.duration);
+        t.pass(`Listen successfully to the topic ${topicName}`);
+        resolve(true);
+      },
+      options: {
+        autoAck: false,
+        subscriptionOptions: {
+          sub: {
+            streamingOptions: {
+              maxStreams: 1,
+            },
           },
         },
       },
-    },
-  });
+      onError(error) {
+        reject(error);
+      },
+    });
 
-  /**
-   * The first client emit on a topic
-   */
-  setTimeout((): void => {
-    void pubSub.emit(topicName, { hello: 'world' });
-  }, 1000);
+    emitAfterDelay(pubSub, topicName);
+  });
 });
 
-test.cb('GPS002a - should properly emit and properly ack manually', (t: CbExecutionContext): void => {
+test('GPS002a - should properly emit and properly ack manually', async (t: ExecutionContext): Promise<void> => {
   const topicName: string = generateRandomTopicName();
   const pubSub: GCPubSub = PubSubFactory.create({
     transport: Transport.GOOGLE_PUBSUB,
@@ -193,38 +209,38 @@ test.cb('GPS002a - should properly emit and properly ack manually', (t: CbExecut
     },
   });
 
-  void pubSub.listen(topicName, {
-    onMessage(message: EmittedMessage<OnMessage>): void {
-      const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
-      message.ack();
-      t.deepEqual(message.payload, {
-        hello: 'world',
-      });
-      t.deepEqual(message.metadata, {
-        namespace: 'test-app',
-        environment: 'test',
-      });
-      t.truthy(spy.called);
-      t.truthy(message.id);
-      t.truthy(message.ackId);
-      t.truthy(message.emittedAt);
-      t.truthy(message.receivedAt);
-      t.is(message.count, 0);
-      t.truthy(message.duration);
-      t.pass(`Listen successfully to the topic ${topicName}`);
-      t.end();
-    },
-    options: {
-      autoAck: false,
-    },
-  });
+  await new Promise((resolve, reject) => {
+    void pubSub.listen(topicName, {
+      onMessage(message: EmittedMessage<OnMessage>): void {
+        const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
+        message.ack();
+        t.deepEqual(message.payload, {
+          hello: 'world',
+        });
+        t.deepEqual(message.metadata, {
+          namespace: 'test-app',
+          environment: 'test',
+        });
+        t.truthy(spy.called);
+        t.truthy(message.id);
+        t.truthy(message.ackId);
+        t.truthy(message.emittedAt);
+        t.truthy(message.receivedAt);
+        t.is(message.count, 0);
+        t.truthy(message.duration);
+        t.pass(`Listen successfully to the topic ${topicName}`);
+        resolve(true);
+      },
+      options: {
+        autoAck: false,
+      },
+      onError(err) {
+        reject(err);
+      },
+    });
 
-  /**
-   * The first client emit on a topic
-   */
-  setTimeout((): void => {
-    void pubSub.emit(topicName, { hello: 'world' });
-  }, 1000);
+    emitAfterDelay(pubSub, topicName);
+  });
 });
 
 test('GPS003 - should add prefix to subscription and topic', async (t: ExecutionContext): Promise<void> => {
