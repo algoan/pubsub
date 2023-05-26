@@ -40,7 +40,7 @@
     "@types/sinon": "^10.0.14",
     "@types/uuid": "^9.0.1",
     "@yelloan/tslint": "0.3.0",
-    "ava": "^5.2.0",
+    "ava": "^5.3.0",
     "commitizen": "^4.3.0",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.40.0",
