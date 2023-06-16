@@ -414,3 +414,28 @@ test('GPS009 - should not create a subscription or a topic', async (t: Execution
     undefined,
   );
 });
+
+test('GPS010 - should use another topic name', async (t: ExecutionContext): Promise<void> => {
+  const subscriptionName: string = generateRandomTopicName();
+  const topicName: string = 'generateRandomTopicName';
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      topicsPrefix: 'algoan',
+      topicsSeparator: '-',
+    },
+  });
+
+  await pubsub.listen(subscriptionName, {
+    options: {
+      topicName,
+    },
+  });
+
+  const [isTopicExisting] = await pubsub.client.topic(topicName).exists();
+  const [isSubscriptionExisting] = await pubsub.client.topic(topicName).subscription(subscriptionName).exists();
+
+  t.true(isTopicExisting);
+  t.true(isSubscriptionExisting);
+});
