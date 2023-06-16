@@ -56,6 +56,8 @@ export interface GCListenOptions {
   messageOptions?: Omit<MessageOptions, 'json' | 'data'>;
   /** Topic Publish options */
   publishOptions?: PublishOptions;
+  /** Topic name, if you want a different name than the subscription */
+  topicName?: string;
 }
 
 /**

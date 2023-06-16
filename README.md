@@ -107,6 +107,7 @@ If the chosen transport is Google Cloud PubSub, then `options` would be:
   - `sub`: Options applied to the subscription instance (see also [`setOptions` method](https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#setOptions))
   - `create`: Options applied to the `createSubscription` method (have a look at [Create Subscription options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#createSubscription))
 - `topicOptions`: Options applied to the created topic (have a look at [Topic options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#get))
+- `topicName`: Set the topic name. By default, it uses the default name with a prefix.
 
 ### `pubsub.emit(event, payload, opts)`
 

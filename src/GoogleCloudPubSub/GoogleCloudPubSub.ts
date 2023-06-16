@@ -119,7 +119,8 @@ export class GoogleCloudPubSub implements GCPubSub {
     event: string,
     opts: ListenOptions<T, GCListenOptions> = { options: { autoAck: true } },
   ): Promise<void> {
-    const topic: Topic = await this.getOrCreateTopic(event, opts.options?.topicOptions);
+    const topicName: string = opts?.options?.topicName ?? this.getTopicName(event);
+    const topic: Topic = await this.getOrCreateTopic(topicName, opts.options?.topicOptions);
     const subscription: Subscription = await this.getOrCreateSubscription(
       event,
       topic,
@@ -211,21 +212,20 @@ export class GoogleCloudPubSub implements GCPubSub {
     getTopicOptions?: GetTopicOptions,
     publishOptions?: PublishOptions,
   ): Promise<Topic> {
-    const topicName: string = this.getTopicName(name);
-    const cachedTopic: Topic | undefined = this.topics.get(topicName);
+    const cachedTopic: Topic | undefined = this.topics.get(name);
     const topicOptions = { autoCreate: true, ...getTopicOptions };
 
     if (cachedTopic !== undefined) {
       return cachedTopic;
     }
 
-    const [topic]: GetTopicResponse = await this.client.topic(topicName).get(topicOptions);
+    const [topic]: GetTopicResponse = await this.client.topic(name).get(topicOptions);
 
     if (publishOptions) {
       topic.setPublishOptions(publishOptions);
     }
 
-    this.topics.set(topicName, topic);
+    this.topics.set(name, topic);
 
     return topic;
   }
