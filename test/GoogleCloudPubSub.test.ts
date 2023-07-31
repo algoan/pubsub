@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /* eslint-disable prefer-arrow/prefer-arrow-functions */
 /* eslint-disable no-void */
 import test, { ExecutionContext } from 'ava';
@@ -430,6 +431,74 @@ test('GPS010 - should use another topic name', async (t: ExecutionContext): Prom
   await pubsub.listen(subscriptionName, {
     options: {
       topicName,
+    },
+  });
+
+  const [isTopicExisting] = await pubsub.client.topic(topicName).exists();
+  const [isSubscriptionExisting] = await pubsub.client.topic(topicName).subscription(subscriptionName).exists();
+
+  t.true(isTopicExisting);
+  t.true(isSubscriptionExisting);
+});
+
+test('GPS011 - should throw an error because the topic is not attached to the subscription', async (t: ExecutionContext): Promise<void> => {
+  const subscriptionName: string = generateRandomTopicName();
+  const topicName: string = generateRandomTopicName();
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      topicsPrefix: 'algoan',
+      topicsSeparator: '-',
+    },
+  });
+
+  const [[createdTopic], [secondTopic]] = await Promise.all([
+    pubsub.client.createTopic(topicName),
+    pubsub.client.createTopic('random_topic'),
+  ]);
+  await createdTopic.createSubscription(subscriptionName);
+
+  try {
+    await pubsub.listen(subscriptionName, {
+      options: {
+        topicName: secondTopic.name,
+        topicOptions: {
+          autoCreate: false,
+        },
+      },
+    });
+
+    t.fail('This promise is not supposed to be resolved, since the topic does not exist!');
+  } catch (err) {
+    t.is(
+      (err as Error).message,
+      `[@algoan/pubsub] The topic ${secondTopic.name} is not attached to this subscription (expects topic ${createdTopic.name})`,
+    );
+  }
+});
+
+test('GPS012 - should properly listen to the already created subscription', async (t: ExecutionContext): Promise<void> => {
+  const subscriptionName: string = generateRandomTopicName();
+  const topicName: string = generateRandomTopicName();
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      topicsPrefix: 'algoan',
+      topicsSeparator: '-',
+    },
+  });
+
+  const [createdTopic] = await pubsub.client.createTopic(topicName);
+  await createdTopic.createSubscription(subscriptionName);
+
+  await pubsub.listen(subscriptionName, {
+    options: {
+      topicName: createdTopic.name,
+      topicOptions: {
+        autoCreate: false,
+      },
     },
   });
 
