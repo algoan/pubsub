@@ -252,6 +252,15 @@ export class GoogleCloudPubSub implements GCPubSub {
     const sub: Subscription = topic.subscription(subscriptionName, options?.sub);
     const [exists]: ExistsResponse = await sub.exists();
 
+    /**
+     * If autoCreate mode is disabled, check if the subscription is attached to the topic
+     */
+    if (exists && sub.metadata?.topic !== undefined && sub.metadata.topic !== topic.name) {
+      throw new Error(
+        `[@algoan/pubsub] The topic ${topic.name} is not attached to this subscription (expects topic ${sub.metadata.topic})`,
+      );
+    }
+
     const [subscription]: GetSubscriptionResponse | CreateSubscriptionResponse = exists
       ? await sub.get(options?.get)
       : await sub.create(options?.create);
