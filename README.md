@@ -41,7 +41,7 @@ To create a PubSub instance using Google Cloud:
 ```typescript
 import { EmittedMessage, GCPubSub, PubSubFactory, Transport } from '@algoan/pubsub'
 
-const pubSub: GCPubSub = PubSubFactory.create({
+const pubsub: GCPubSub = PubSubFactory.create({
   transport: Transport.GOOGLE_PUBSUB,
   options: {
     projectId: 'test',
