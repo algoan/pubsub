@@ -15,7 +15,7 @@ on:
         required: false
         type: string
         default: master
-    
+
 
 jobs:
   test:
@@ -23,15 +23,19 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        node-version: [16.x, 18.x, 20.x]
+        version: [
+          { node: "16.x", npm: "8" },
+          { node: "18.x", npm: "10" },
+          { node: "20.x", npm: "10" }
+        ]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
     - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Use Node.js ${{ matrix.version.node }}
       uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: ${{ matrix.version.node }}
         cache: 'npm'
     - name: Get GCloud CLI to install pubsub emulator
       uses: google-github-actions/setup-gcloud@v0
@@ -41,7 +45,7 @@ jobs:
       run: gcloud components install beta --quiet
     - name: Install pubsub-emulator
       run: gcloud components install pubsub-emulator --quiet
-    - run: npm i -g npm
+    - run: npm i -g npm@${{ matrix.version.npm }}
     - run: npm i
     - run: npm run cover
 
@@ -56,7 +60,7 @@ jobs:
       with:
         fetch-depth: 0
         ref: ${{ inputs.ref }}
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Use Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18.x'
