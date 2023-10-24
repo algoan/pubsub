@@ -22,6 +22,7 @@ Then, to install the [Google PubSub simulator](https://cloud.google.com/pubsub/d
 
 ```shell
 gcloud components install pubsub-emulator
+gcloud components install beta
 gcloud components update
 ```
 
