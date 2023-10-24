@@ -32,7 +32,7 @@
   "license": "ISC",
   "devDependencies": {
     "@algoan/eslint-config": "^1.1.7",
-    "@amanda-mitchell/semantic-release-npm-multiple": "^3.8.0",
+    "@amanda-mitchell/semantic-release-npm-multiple": "^3.9.0",
     "@ava/typescript": "^4.1.0",
     "@commitlint/cli": "^17.6.7",
     "@commitlint/config-conventional": "^17.6.7",
