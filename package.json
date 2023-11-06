@@ -50,7 +50,7 @@
     "prettier": "^3.0.3",
     "rimraf": "^5.0.5",
     "semantic-release": "^22.0.5",
-    "sinon": "^17.0.0",
+    "sinon": "^17.0.1",
     "typescript": "^5.2.2",
     "uuid": "^9.0.1"
   },
