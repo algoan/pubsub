@@ -132,7 +132,7 @@ export class GoogleCloudPubSub implements GCPubSub {
       const extendedMessage: ExtendedMessage<T> = new ExtendedMessage<T>(message);
 
       this.logger.debug(
-        { ...extendedMessage, originalMessage: undefined },
+        { ...extendedMessage, payload: undefined, originalMessage: undefined },
         `A message has been received for Subscription ${subscription.name} after ${
           message.received - message.publishTime.valueOf()
         } ms`,
@@ -169,12 +169,7 @@ export class GoogleCloudPubSub implements GCPubSub {
     opts: EmitOptions<GCListenOptions> = {},
   ): Promise<string> {
     const topic: Topic = await this.getOrCreateTopic(event, opts.options?.topicOptions, opts.options?.publishOptions);
-    this.logger.debug(
-      {
-        data,
-      },
-      `Found topic ${topic.name} for event ${event}`,
-    );
+    this.logger.debug(`Found topic ${topic.name} for event ${event}`);
 
     const attributes: Attributes = { ...opts.options?.messageOptions?.attributes };
 
@@ -188,7 +183,6 @@ export class GoogleCloudPubSub implements GCPubSub {
 
     this.logger.debug(
       {
-        data,
         attributes,
       },
       `Sending payload to Topic ${topic.name}`,
