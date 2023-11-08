@@ -38,7 +38,7 @@
     "@commitlint/config-conventional": "^18.1.0",
     "@semantic-release/git": "^10.0.1",
     "@types/sinon": "^17.0.1",
-    "@types/uuid": "^9.0.6",
+    "@types/uuid": "^9.0.7",
     "ava": "^5.3.1",
     "commitizen": "^4.3.0",
     "cz-conventional-changelog": "^3.3.0",
