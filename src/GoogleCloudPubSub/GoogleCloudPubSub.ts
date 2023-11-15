@@ -168,7 +168,11 @@ export class GoogleCloudPubSub implements GCPubSub {
     data: Record<string, unknown>,
     opts: EmitOptions<GCListenOptions> = {},
   ): Promise<string> {
-    const topic: Topic = await this.getOrCreateTopic(event, opts.options?.topicOptions, opts.options?.publishOptions);
+    const topic: Topic = await this.getOrCreateTopic(
+      this.getTopicName(event),
+      opts.options?.topicOptions,
+      opts.options?.publishOptions,
+    );
     this.logger.debug(`Found topic ${topic.name} for event ${event}`);
 
     const attributes: Attributes = { ...opts.options?.messageOptions?.attributes };
