@@ -148,6 +148,51 @@ test('GPS001b - should properly emit and listen with ordering key', async (t: Ex
   });
 });
 
+test('GPS001c - should properly emit and listen with a prefix', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = generateRandomTopicName();
+  const topicsPrefix: string = 'pref';
+  const pubSub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      topicsPrefix,
+    },
+  });
+
+  await new Promise((resolve, reject) => {
+    void pubSub.listen(topicName, {
+      options: {
+        autoAck: true,
+      },
+      onMessage(message: EmittedMessage<OnMessage>): void {
+        const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
+        if (isPayloadError(message.payload)) {
+          return reject('Error in payload');
+        }
+
+        const payload: OnMessage = message.payload;
+        t.deepEqual(payload, {
+          hello: 'world',
+        });
+        t.falsy(spy.called);
+        t.truthy(message.id);
+        t.truthy(message.ackId);
+        t.truthy(message.emittedAt);
+        t.truthy(message.receivedAt);
+        t.is(message.count, 0);
+        t.truthy(message.duration);
+        t.pass(`Listen successfully to the topic ${topicName}`);
+        resolve(true);
+      },
+      onError(error) {
+        reject(error);
+      },
+    });
+
+    emitAfterDelay(pubSub, topicName);
+  });
+});
+
 test('GPS002 - should properly emit but the ack method is never called - no ack', async (t: ExecutionContext): Promise<void> => {
   const topicName: string = generateRandomTopicName();
   const pubSub: GCPubSub = PubSubFactory.create({
