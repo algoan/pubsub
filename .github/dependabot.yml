@@ -5,49 +5,15 @@ updates:
   schedule:
     interval: daily
     time: "04:00"
-  open-pull-requests-limit: 10
+  open-pull-requests-limit: 5
   versioning-strategy: increase
+  reviewers:
+    - LeKer29
+    - g-ongenae
   ignore:
-  - dependency-name: sinon
-    versions:
-    - 10.0.1
-  - dependency-name: eslint
-    versions:
-    - 7.18.0
-    - 7.19.0
-    - 7.22.0
-    - 7.23.0
-  - dependency-name: "@commitlint/cli"
-    versions:
-    - 12.1.1
-  - dependency-name: "@commitlint/config-conventional"
-    versions:
-    - 12.0.0
-    - 12.0.1
-    - 12.1.1
-  - dependency-name: husky
-    versions:
-    - 4.3.8
-    - 5.0.9
-    - 5.1.0
-    - 5.1.3
-    - 5.2.0
-    - 6.0.0
   - dependency-name: y18n
     versions:
     - 4.0.1
-  - dependency-name: semantic-release
-    versions:
-    - 17.3.7
-    - 17.3.8
-    - 17.4.0
-    - 17.4.1
-    - 17.4.2
-  - dependency-name: pino
-    versions:
-    - 6.11.0
-    - 6.11.1
-    - 6.11.2
   - dependency-name: pino-pretty
     versions:
     - 4.4.0
@@ -55,20 +21,6 @@ updates:
     - 4.6.0
     - 4.7.0
     - 4.7.1
-  - dependency-name: "@types/sinon"
-    versions:
-    - 9.0.11
-  - dependency-name: typescript
-    versions:
-    - 4.2.3
   - dependency-name: ini
     versions:
     - 1.3.7
-  - dependency-name: "@google-cloud/pubsub"
-    versions:
-    - 2.10.0
-    - 2.8.0
-    - 2.9.0
-  - dependency-name: "@algoan/eslint-config"
-    versions:
-    - 1.1.2
