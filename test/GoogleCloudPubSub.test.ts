@@ -508,3 +508,40 @@ test('GPS012 - should properly listen to the already created subscription', asyn
   t.true(isTopicExisting);
   t.true(isSubscriptionExisting);
 });
+
+test('GPS013 - should throw an error because the subscription is not created', async (t: ExecutionContext): Promise<void> => {
+  const subscriptionName: string = generateRandomTopicName();
+  const topicName: string = generateRandomTopicName();
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      topicsPrefix: 'algoan',
+      topicsSeparator: '-',
+    },
+  });
+
+  const [[createdTopic]] = await Promise.all([pubsub.client.createTopic(topicName)]);
+  try {
+    await pubsub.listen(subscriptionName, {
+      options: {
+        topicName: createdTopic.name,
+        topicOptions: {
+          autoCreate: false,
+        },
+        subscriptionOptions: {
+          get: {
+            autoCreate: false,
+          },
+        },
+      },
+    });
+
+    t.fail('This promise is not supposed to be resolved, since the subscription does not exist!');
+  } catch (err) {
+    t.is(
+      (err as Error).message,
+      `[@algoan/pubsub] The subscription ${subscriptionName} is not found in topic projects/${projectId}/topics/${topicName}`,
+    );
+  }
+});

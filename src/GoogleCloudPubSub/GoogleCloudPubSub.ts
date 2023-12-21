@@ -240,8 +240,12 @@ export class GoogleCloudPubSub implements GCPubSub {
   private async getOrCreateSubscription(
     name: string,
     topic: Topic,
-    options?: GCSubscriptionOptions,
+    subOptions?: GCSubscriptionOptions,
   ): Promise<Subscription> {
+    const options = {
+      get: { autoCreate: true, ...subOptions?.get },
+      ...subOptions,
+    };
     const subscriptionName: string = options?.name ?? this.getSubscriptionName(name);
     const cachedSubscription: Subscription | undefined = this.subscriptions.get(subscriptionName);
 
@@ -259,6 +263,13 @@ export class GoogleCloudPubSub implements GCPubSub {
       throw new Error(
         `[@algoan/pubsub] The topic ${topic.name} is not attached to this subscription (expects topic ${sub.metadata.topic})`,
       );
+    }
+
+    if (!exists && !(options.get.autoCreate ?? false)) {
+      /**
+       * If autoCreate mode is disabled then do not create the subscription
+       */
+      throw new Error(`[@algoan/pubsub] The subscription ${subscriptionName} is not found in topic ${topic.name}`);
     }
 
     const [subscription]: GetSubscriptionResponse | CreateSubscriptionResponse = exists
