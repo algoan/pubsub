@@ -10,7 +10,7 @@
     "prepare": "husky install",
     "commit": "git-cz",
     "pretest": "npm run compile && npm run lint",
-    "prettier": "prettier --write '{src,test}/**/*.ts'",
+    "prettier": "prettier --write '{src,test,examples}/**/*.{js,ts}'",
     "lint": "eslint ./src/**/*.ts",
     "test": "ava --color --verbose",
     "cover": "nyc --reporter=html --reporter=lcov npm test",
