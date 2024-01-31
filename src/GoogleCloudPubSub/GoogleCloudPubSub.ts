@@ -200,6 +200,23 @@ export class GoogleCloudPubSub implements GCPubSub {
   }
 
   /**
+   * Stop listening to a specific subscription. Close the server connection.
+   * @param event Event name
+   */
+  public async unsubscribe(event: string): Promise<void> {
+    const subscriptionName: string = this.getSubscriptionName(event);
+    // Cover a case where there could be a custom subscription name with a prefix.
+    const cachedSubscription: Subscription | undefined =
+      this.subscriptions.get(subscriptionName) || this.subscriptions.get(event);
+
+    if (cachedSubscription === undefined) {
+      return;
+    }
+
+    return cachedSubscription.close();
+  }
+
+  /**
    * Get or create a topic on Google PubSub
    * Also fill the topic map in-memory cache
    * @tutorial https://github.com/googleapis/nodejs-pubsub/blob/master/samples/createTopic.js

@@ -102,6 +102,153 @@ test('GPS001c - should properly emit and listen with a prefix', async (t: Execut
   });
 });
 
+test('GPS001d - should properly emit, but not listen to the subscription', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = generateRandomTopicName();
+  const pubSub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+    },
+  });
+
+  await new Promise(async (resolve, reject) => {
+    await pubSub.listen(topicName, {
+      options: {
+        autoAck: true,
+      },
+      onMessage(): void {
+        reject(`Should not listen to anything, because unsubscribed from subscription ${topicName}`);
+      },
+      onError(error) {
+        reject(error);
+      },
+    });
+
+    await pubSub.unsubscribe(topicName);
+
+    setTimeout(resolve, 2000);
+
+    emitAfterDelay(pubSub, topicName);
+  });
+
+  t.pass('Test succeeded, because no message was received');
+});
+
+test('GPS001e - should properly emit and listen because wrong topic name to unsubscribe', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = generateRandomTopicName();
+  const pubSub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+    },
+  });
+
+  await new Promise(async (resolve, reject) => {
+    await pubSub.listen(topicName, {
+      options: {
+        autoAck: true,
+      },
+      onMessage(message: EmittedMessage<OnMessage>): void {
+        const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
+        if (isPayloadError(message.payload)) {
+          return reject('Error in payload');
+        }
+
+        const payload: OnMessage = message.payload;
+        t.deepEqual(payload, {
+          hello: 'world',
+        });
+        t.falsy(spy.called);
+        t.truthy(message.id);
+        t.truthy(message.ackId);
+        t.truthy(message.emittedAt);
+        t.truthy(message.receivedAt);
+        t.is(message.count, 0);
+        t.truthy(message.duration);
+        t.pass(`Listen successfully to the topic ${topicName}`);
+        resolve(true);
+      },
+      onError(error) {
+        reject(error);
+      },
+    });
+
+    await pubSub.unsubscribe('wrong_subscription_or_topic_name');
+
+    emitAfterDelay(pubSub, topicName);
+  });
+});
+
+test('GPS001f - should properly emit, but not listen to the subscription with a prefix', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = generateRandomTopicName();
+  const pubSub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      subscriptionsPrefix: 'my-prefix',
+    },
+  });
+
+  await new Promise(async (resolve, reject) => {
+    await pubSub.listen(topicName, {
+      options: {
+        autoAck: true,
+      },
+      onMessage(): void {
+        reject(`Should not listen to anything, because unsubscribed from subscription ${topicName}`);
+      },
+      onError(error) {
+        reject(error);
+      },
+    });
+
+    await pubSub.unsubscribe(topicName);
+
+    setTimeout(resolve, 2000);
+
+    emitAfterDelay(pubSub, topicName);
+  });
+
+  t.pass('Test succeeded, because no message was received');
+});
+
+test('GPS001g - should properly emit, but not listen to the subscription with a custom name and a prefix', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = generateRandomTopicName();
+  const customSubscriptionName = 'completely-different-name';
+  const pubSub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      subscriptionsPrefix: 'my-prefix',
+    },
+  });
+
+  await new Promise(async (resolve, reject) => {
+    await pubSub.listen(topicName, {
+      options: {
+        autoAck: true,
+        subscriptionOptions: {
+          name: customSubscriptionName,
+        },
+      },
+      onMessage(): void {
+        reject(`Should not listen to anything, because unsubscribed from subscription ${topicName}`);
+      },
+      onError(error) {
+        reject(error);
+      },
+    });
+
+    await pubSub.unsubscribe(customSubscriptionName);
+
+    setTimeout(resolve, 2000);
+
+    emitAfterDelay(pubSub, topicName);
+  });
+
+  t.pass('Test succeeded, because no message was received');
+});
+
 test('GPS002 - should properly emit but the ack method is never called - no ack', async (t: ExecutionContext): Promise<void> => {
   const topicName: string = generateRandomTopicName();
   const pubSub: GCPubSub = PubSubFactory.create({
