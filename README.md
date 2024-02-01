@@ -125,3 +125,9 @@ If the chosen transport is Google Cloud PubSub, then `options` would be:
 - `topicOptions`: Options applied to the created topic (have a look at [Topic options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#get))
 - `publishOptions`: Publish options set to the topic after its creation. Refer to [Publish Options](https://googleapis.dev/nodejs/pubsub/latest/global.html#PublishOptions)
 - `messageOptions`: Additional message options added to the message. Refer to [Message Options](https://googleapis.dev/nodejs/pubsub/latest/google.pubsub.v1.IPubsubMessage.html)
+
+### `pubsub.unsubscribe(event)`
+
+Stop the server connection for a given subscription.
+
+- `event`: Name of of the event to stop listening for.
