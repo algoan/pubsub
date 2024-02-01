@@ -34,11 +34,11 @@
     "@algoan/eslint-config": "^2.1.1",
     "@amanda-mitchell/semantic-release-npm-multiple": "github:algoan/semantic-release-npm-multiple#fd763c631503cb88dd143ce72c5838aa1b19ace4",
     "@ava/typescript": "^4.1.0",
-    "@commitlint/cli": "^18.4.3",
-    "@commitlint/config-conventional": "^18.4.3",
+    "@commitlint/cli": "^18.6.0",
+    "@commitlint/config-conventional": "^18.6.0",
     "@semantic-release/git": "^10.0.1",
-    "@types/sinon": "^17.0.2",
-    "@types/uuid": "^9.0.7",
+    "@types/sinon": "^17.0.3",
+    "@types/uuid": "^9.0.8",
     "ava": "^5.3.1",
     "commitizen": "^4.3.0",
     "cz-conventional-changelog": "^3.3.0",
@@ -47,7 +47,7 @@
     "husky": "^9.0.10",
     "lint-staged": "^15.2.2",
     "nyc": "^15.1.0",
-    "prettier": "^3.1.1",
+    "prettier": "^3.2.4",
     "rimraf": "^5.0.5",
     "semantic-release": "^23.0.2",
     "sinon": "^17.0.1",
@@ -55,8 +55,8 @@
     "uuid": "^9.0.1"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "^4.0.7",
-    "pino": "^8.16.2"
+    "@google-cloud/pubsub": "^4.1.1",
+    "pino": "^8.17.2"
   },
   "engines": {
     "node": ">= 12"
