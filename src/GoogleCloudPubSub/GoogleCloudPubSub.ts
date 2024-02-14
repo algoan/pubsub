@@ -139,7 +139,7 @@ export class GoogleCloudPubSub implements GCPubSub {
       );
 
       if (opts.options?.autoAck !== false) {
-        message.ack();
+        extendedMessage.ack();
       }
 
       if (opts.onMessage !== undefined) {
