@@ -111,25 +111,9 @@ test('GPS001d - should properly emit, but not listen to the subscription', async
     },
   });
 
-  await new Promise(async (resolve, reject) => {
-    await pubSub.listen(topicName, {
-      options: {
-        autoAck: true,
-      },
-      onMessage(): void {
-        reject(`Should not listen to anything, because unsubscribed from subscription ${topicName}`);
-      },
-      onError(error) {
-        reject(error);
-      },
-    });
+  const testUtils = new TestUtils(pubSub, topicName, t);
 
-    await pubSub.unsubscribe(topicName);
-
-    setTimeout(resolve, 2000);
-
-    emitAfterDelay(pubSub, topicName);
-  });
+  await testUtils.validateNotListeningAndEmit(topicName);
 
   t.pass('Test succeeded, because no message was received');
 });
@@ -143,39 +127,12 @@ test('GPS001e - should properly emit and listen because wrong topic name to unsu
     },
   });
 
-  await new Promise(async (resolve, reject) => {
-    await pubSub.listen(topicName, {
-      options: {
-        autoAck: true,
-      },
-      onMessage(message: EmittedMessage<OnMessage>): void {
-        const spy: sinon.SinonSpy = sinon.spy(message.getOriginalMessage(), 'ack');
-        if (isPayloadError(message.payload)) {
-          return reject('Error in payload');
-        }
+  const testUtils = new TestUtils(pubSub, topicName, t);
 
-        const payload: OnMessage = message.payload;
-        t.deepEqual(payload, {
-          hello: 'world',
-        });
-        t.falsy(spy.called);
-        t.truthy(message.id);
-        t.truthy(message.ackId);
-        t.truthy(message.emittedAt);
-        t.truthy(message.receivedAt);
-        t.is(message.count, 0);
-        t.truthy(message.duration);
-        t.pass(`Listen successfully to the topic ${topicName}`);
-        resolve(true);
-      },
-      onError(error) {
-        reject(error);
-      },
-    });
-
-    await pubSub.unsubscribe('wrong_subscription_or_topic_name');
-
-    emitAfterDelay(pubSub, topicName);
+  await testUtils.validateNotListeningAndEmit('wrong_subscription_or_topic_name', true, (message) => {
+    t.true(ackSpy.calledOnce);
+    t.true(ackSpy.called);
+    t.is(message.count, 0);
   });
 });
 
@@ -189,25 +146,9 @@ test('GPS001f - should properly emit, but not listen to the subscription with a 
     },
   });
 
-  await new Promise(async (resolve, reject) => {
-    await pubSub.listen(topicName, {
-      options: {
-        autoAck: true,
-      },
-      onMessage(): void {
-        reject(`Should not listen to anything, because unsubscribed from subscription ${topicName}`);
-      },
-      onError(error) {
-        reject(error);
-      },
-    });
+  const testUtils = new TestUtils(pubSub, topicName, t);
 
-    await pubSub.unsubscribe(topicName);
-
-    setTimeout(resolve, 2000);
-
-    emitAfterDelay(pubSub, topicName);
-  });
+  await testUtils.validateNotListeningAndEmit(topicName);
 
   t.pass('Test succeeded, because no message was received');
 });
@@ -223,27 +164,13 @@ test('GPS001g - should properly emit, but not listen to the subscription with a 
     },
   });
 
-  await new Promise(async (resolve, reject) => {
-    await pubSub.listen(topicName, {
-      options: {
-        autoAck: true,
-        subscriptionOptions: {
-          name: customSubscriptionName,
-        },
-      },
-      onMessage(): void {
-        reject(`Should not listen to anything, because unsubscribed from subscription ${topicName}`);
-      },
-      onError(error) {
-        reject(error);
-      },
-    });
+  const testUtils = new TestUtils(pubSub, topicName, t);
 
-    await pubSub.unsubscribe(customSubscriptionName);
-
-    setTimeout(resolve, 2000);
-
-    emitAfterDelay(pubSub, topicName);
+  await testUtils.validateNotListeningAndEmit(customSubscriptionName, false, undefined, {
+    autoAck: true,
+    subscriptionOptions: {
+      name: customSubscriptionName,
+    },
   });
 
   t.pass('Test succeeded, because no message was received');
