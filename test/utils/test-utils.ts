@@ -33,23 +33,8 @@ export class TestUtils {
   ) {
     await new Promise((resolve, reject) => {
       void this.pubSub.listen(this.topicName, {
-        onMessage: (message: EmittedMessage<OnMessage>): void => {
-          try {
-            if (isPayloadError(message.payload)) {
-              return reject('Error in payload');
-            }
-
-            const payload: OnMessage = message.payload;
-            this.validateEmittedMessageProperties(message, payload);
-            validateListenFn(message);
-            resolve(true);
-          } catch (err) {
-            reject(err);
-          }
-        },
-        onError: (error) => {
-          reject(error);
-        },
+        onMessage: this.handleMessage.bind(this, validateListenFn, resolve),
+        onError: this.handleError.bind(this, reject),
         options: listenOptions,
       });
 
@@ -58,19 +43,92 @@ export class TestUtils {
   }
 
   /**
+   * Validate the unsubscription by rejecting the promise if a message is listened
+   * @param subscriptionName Name of the subscription to unsubscribe to
+   * @param shouldListen set to true if you do not want to reject the onMessage method
+   * @param validateListenFn Custom validation function with the emitted message as argument
+   * @param listenOptions Listen options
+   */
+  public async validateNotListeningAndEmit(
+    subscriptionName: string,
+    shouldListen: boolean = false,
+    validateListenFn?: (msg: EmittedMessage<OnMessage>) => void,
+    listenOptions?: GCListenOptions,
+  ) {
+    await new Promise(async (resolve, reject) => {
+      await this.pubSub.listen(this.topicName, {
+        onMessage:
+          shouldListen && validateListenFn
+            ? this.handleMessage.bind(this, validateListenFn, resolve)
+            : this.handleUnsubscribeMessage.bind(this, subscriptionName, reject),
+        onError: this.handleError.bind(this, reject),
+        options: listenOptions,
+      });
+
+      await this.pubSub.unsubscribe(subscriptionName);
+
+      void this.emitAfterDelay();
+
+      await setTimeout(2000);
+
+      resolve(true);
+    });
+  }
+
+  /**
+   * Handle emitted messages
+   * @param validateListenFn Custom validation function with the emitted message as argument
+   * @param resolve Promise resolve function
+   * @param message Emitted message
+   */
+  private handleMessage(
+    validateListenFn: (msg: EmittedMessage<OnMessage>) => void,
+    resolve: (val: unknown) => void,
+    message: EmittedMessage<OnMessage>,
+  ): void {
+    try {
+      if (isPayloadError(message.payload)) {
+        throw new Error('Error in payload');
+      }
+
+      const payload: OnMessage = message.payload;
+      this.validateEmittedMessageProperties(message, payload);
+      validateListenFn(message);
+      resolve(true);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Handle errors
+   * @param reject Promise reject function
+   * @param error Error object
+   */
+  private handleError(reject: (reason?: any) => void, error: any): void {
+    reject(error);
+  }
+
+  /**
+   * Handle messages after unsubscribe
+   * @param subscriptionName Subscription name
+   * @param reject Promise reject function
+   */
+  private handleUnsubscribeMessage(subscriptionName: string, reject: (reason?: any) => void): void {
+    reject(`Should not listen to anything, because unsubscribed from subscription ${subscriptionName}`);
+  }
+
+  /**
    * Validate some properties of the Emitted Message
    * @param message Emitted message
    * @param payload Non error payload of the message
    */
   private validateEmittedMessageProperties(message: EmittedMessage<OnMessage>, payload: OnMessage) {
-    this.avaExecCtx.deepEqual(payload, {
-      hello: 'world',
+    const { avaExecCtx } = this;
+    avaExecCtx.deepEqual(payload, { hello: 'world' });
+    ['id', 'ackId', 'emittedAt', 'receivedAt', 'duration'].forEach((property) => {
+      avaExecCtx.truthy(message[property as keyof EmittedMessage<OnMessage>]);
     });
-    this.avaExecCtx.truthy(message.id);
-    this.avaExecCtx.truthy(message.ackId);
-    this.avaExecCtx.truthy(message.emittedAt);
-    this.avaExecCtx.truthy(message.receivedAt);
-    this.avaExecCtx.truthy(message.duration);
   }
 
   /**

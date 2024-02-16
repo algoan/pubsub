@@ -24,6 +24,11 @@ export interface PubSub<PSClient, PSSubscription, SubscriptionOptions> {
   listen<MessagePayload>(event: string, options?: ListenOptions<MessagePayload, SubscriptionOptions>): Promise<void>;
 
   /**
+   * Stop listening to a subscription
+   */
+  unsubscribe(event: string): Promise<void>;
+
+  /**
    * Emit an event
    * @param event Event to emit
    * @param data Payload to send
