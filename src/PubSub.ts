@@ -1,58 +1,72 @@
-import { EmittedMessage, Metadata } from './EmittedMessage';
+import { EmittedMessage } from './EmittedMessage';
+import { PublishOptions, PublishPayload, PubSubOptions, SubscribeOptions } from './lib';
 
 /**
- * PubSub generic interface
+ * PubSub Abstract Class
  */
-export interface PubSub<PSClient, PSSubscription, SubscriptionOptions> {
+export abstract class PubSub {
+  constructor(protected options?: PubSubOptions) {}
   /**
-   * The exposed PubSub client
-   * If it is Google, then PSClient = PubSub
-   * https://github.com/googleapis/nodejs-pubsub/blob/master/src/pubsub.ts#L235
+   * Get access to the native client object
    */
-  client: PSClient;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public abstract getNativeClient(): any;
   /**
-   * Exposed cached subscriptions
-   * If it is Google, then PSSubscription = Subscription
-   * https://github.com/googleapis/nodejs-pubsub/blob/master/src/subscription.ts#L211
+   * Subscribe to a channel and call the listener when it is called
+   * @param channel Name of the channel to subscribe to
+   * @param listener Function to execute when a message is published to the channel
+   * @param options Options to apply to the subscription
    */
-  subscriptions: Map<string, PSSubscription>;
-  /**
-   * Listen to a subscription
-   * @param event Event to listen to
-   * @param options Message handler
-   */
-  listen<MessagePayload>(event: string, options?: ListenOptions<MessagePayload, SubscriptionOptions>): Promise<void>;
+  public abstract subscribe(
+    channel: string,
+    listener: (message: EmittedMessage) => void,
+    options?: SubscribeOptions,
+  ): Promise<void>;
 
   /**
-   * Stop listening to a subscription
+   * Stop listening to a specific channel
+   * @param channel Channel to unsubscribe
    */
-  unsubscribe(event: string): Promise<void>;
+  public abstract unsubscribe(channel: string): Promise<void>;
 
   /**
-   * Emit an event
-   * @param event Event to emit
-   * @param data Payload to send
-   * @param options Options related to the emit options
+   * Publish data on a specific channel
+   * @param channel Name of the channel to publish to
+   * @param data Data to send. Could be a batch of messages
+   * @param options Options related to the publish method
    */
-  emit(event: string, data: object, options?: EmitOptions<SubscriptionOptions>): Promise<string>;
-}
+  public abstract publish(
+    channel: string,
+    data: PublishPayload | PublishPayload[],
+    options?: PublishOptions,
+  ): Promise<void>;
 
-/**
- * Listen options argument
- */
-export interface ListenOptions<T, Options> {
-  /** Error handler */
-  onError?(error: Error): void;
-  /** Message handler */
-  onMessage?(extendedMessage: EmittedMessage<T>): void;
-  /** Options */
-  options?: Options;
-}
+  /**
+   * Change global options
+   * @param options PubSub options
+   */
+  public setGlobalOptions(options: PubSubOptions): void {
+    this.options = { ...this.options, ...options };
+  }
 
-/**
- * Emit options argument
- */
-export interface EmitOptions<Options> {
-  metadata?: Metadata;
-  options?: Options;
+  /**
+   * Get full topic name including the topic prefix if it is defined
+   * @param topicName Name of the topic
+   */
+  protected getTopicName(topicName: string) {
+    return `${this.options?.topicsPrefix ?? ''}${topicName}`;
+  }
+
+  /**
+   * Get full subscription name including the subscription prefix if it is defined
+   * @param subscriptionName Name of the subscription
+   */
+  protected getSubscriptionName(subscriptionName: string, prefix?: string) {
+    return `${prefix ?? this.options?.subscriptionsPrefix ?? ''}${subscriptionName}`;
+  }
+
+  /**
+   * Close all connections to the server
+   */
+  public abstract close(): Promise<void>;
 }
