@@ -1,23 +1,30 @@
-import { GCPubSub, GoogleCloudPubSub, GooglePubSubOptions } from './GoogleCloudPubSub';
+import { GoogleCloudPubSub } from './GoogleCloudPubSub/GoogleCloudPubSub';
+import { PubSubOptions } from './lib';
+import { PubSub } from '.';
 
 /**
  * PubSub factory class
  */
-// tslint:disable-next-line: no-unnecessary-class
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class PubSubFactory {
   /**
    * Create a pubsub instance depending of the transport
    * @param params PubSub parameters
    */
-  public static create(params: FactoryParameters = { transport: Transport.GOOGLE_PUBSUB }): GCPubSub {
-    return new GoogleCloudPubSub(params.options);
+  public static create(params: FactoryParameters): PubSub {
+    switch (params.transport) {
+      case Transport.GOOGLE_PUBSUB:
+        return new GoogleCloudPubSub(params.options);
+      default:
+        throw new Error(`${params.transport} is not a valid transport`);
+    }
   }
 }
-
 /**
  * Transport to use
  */
 export enum Transport {
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   GOOGLE_PUBSUB = 'GOOGLE_PUBSUB',
 }
 
@@ -26,5 +33,5 @@ export enum Transport {
  */
 export interface FactoryParameters {
   transport: Transport;
-  options?: GooglePubSubOptions;
+  options?: PubSubOptions;
 }
