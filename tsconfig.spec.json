@@ -1,0 +1,15 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+      "sourceMap": true,
+      "noUnusedLocals": false,
+      "noUnusedParameters": false,
+      "noImplicitAny": false,
+      "esModuleInterop": true
+    },
+    "include": [
+      "./src/**/*",
+      "./test/**/*"
+    ]
+  }
+  

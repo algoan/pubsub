@@ -1,3 +1,4 @@
 {
-  "extends": "@algoan/eslint-config"
+  "extends": "@algoan/eslint-config",
+  "ignorePatterns": ["/test/**/*.ts", "jest.config.js", "/test/*.js"]
 }
