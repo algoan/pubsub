@@ -18,7 +18,7 @@ gcloud components install beta
 gcloud components update
 ````
 
-You can also run the emulator using Docker:
+Alternatively, you can run the emulator using Docker:
 
 ```shell
 docker pull google/cloud-sdk:emulators
@@ -31,4 +31,4 @@ Then, run:
 npm start
 ```
 
-Navigate on http://localhost:3000! To emit an event, simply call GET http://localhost:3000/emit. To close the subscription server collection, call the GET http://localhost:3000/close API.
+Navigate to http://localhost:3000! To emit an event, simply call GET http://localhost:3000/emit. To close the subscription server collection, call the GET http://localhost:3000/close API.

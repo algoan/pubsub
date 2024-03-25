@@ -9,12 +9,16 @@ const Pubsub = require('@algoan/pubsub');
 const topicName = 'my_topic';
 
 const pubsubClient = Pubsub.PubSubFactory.create({
+  transport: 'GOOGLE_PUBSUB',
   options: {
+    autoCreate: true,
     projectId: 'test',
   },
 });
 const secondPubsubClient = Pubsub.PubSubFactory.create({
+  transport: 'GOOGLE_PUBSUB',
   options: {
+    autoCreate: true,
     projectId: 'test',
   },
 });
@@ -26,7 +30,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/emit', async (req, res) => {
-  secondPubsubClient.emit(topicName, {});
+  secondPubsubClient.publish(topicName, { data: { hello: 'world' } });
   await timers.setTimeout(1000);
   res.redirect('/');
 });
@@ -38,16 +42,17 @@ app.get('/close', async (req, res) => {
 });
 
 app.listen(port, async () => {
-  await pubsubClient.listen(topicName, {
-    options: {
-      subscriptionOptions: {
-        name: topicName,
-      },
-    },
-    onMessage: () => {
-      console.log('Received message!');
+  await pubsubClient.subscribe(
+    topicName,
+    (message) => {
+      console.log('Received message! ', message);
       pubsubCall++;
     },
-  });
+    {
+      messageAckOptions: {
+        autoAck: true,
+      },
+    },
+  );
   console.log(`Example app listening on port ${port}`);
 });

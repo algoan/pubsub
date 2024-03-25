@@ -10,7 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@algoan/pubsub": "^6.1.2",
+    "@algoan/pubsub": "file:../../dist",
+    "@google-cloud/pubsub": "^4.3.3",
     "express": "^4.18.2"
   }
 }
