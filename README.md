@@ -1,133 +1,306 @@
-# PubSub
+<div align="center">
+  <img src="./assets/pubsub_logo.png">
+  <br />
+</div>
 
-This is a generic PubSub Factory exposing a listen and a emit method.
+A generic PubSub factory made to simplify cloud providers native client. Change Pub/Sub provider with a simple parameter.
 
-_NOTE_: Today, only [Google Cloud PubSub](https://cloud.google.com/pubsub/docs/overview) has been added.
+_NOTE_: Today, only [Google Cloud PubSub](https://cloud.google.com/pubsub/docs/overview) has been added. More to come!
 
-## Installation
+# Features
+
+- Just `subscribe` and `publish`. The rest is handled by the library.
+- Send a single or a batch of messages.
+- Exponential retry backoff.
+- Handle several modes: streaming, synchronous pull, push notifications.
+
+# MIGRATION TO V7
+
+The 7th version includes huge breaking changes and massive updates! Follow the guide in order to understand such a refactoring and how to migrate to the v7: [MIGRATING](./MIGRATING_TO_V7.md)
+
+# Usage
+
+You must choose a Pub/Sub provider:
+
+- For [Google Cloud Pub/Sub](https://cloud.google.com/pubsub):
 
 ```bash
-npm install --save @algoan/pubsub
+npm install @algoan/pubsub
+npm install @google-cloud/pubsub
 ```
-
-## Usage
-
-### Google Cloud PubSub
-
-#### Run tests
-
-To run tests or to try the PubSubFactory class, you need to have a google account and have installed gcloud sdk.
-
-Then, to install the [Google PubSub simulator](https://cloud.google.com/pubsub/docs/emulator), run:
-
-```shell
-gcloud components install pubsub-emulator
-gcloud components install beta
-gcloud components update
-```
-
-Start tests running:
-
-```shell
-npm test
-```
-
-It will launch a Google PubSub emulator thanks to the [google-pubsub-emulator](https://github.com/ert78gb/google-pubsub-emulator) library.
-
-
-#### Example
-
-To create a PubSub instance using Google Cloud:
 
 ```typescript
-import { EmittedMessage, GCPubSub, PubSubFactory, Transport } from '@algoan/pubsub'
+import { PubSubFactory, Transport } from '@algoan/pubsub'
 
-const pubsub: GCPubSub = PubSubFactory.create({
+const pubsub = PubSubFactory.create({
   transport: Transport.GOOGLE_PUBSUB,
-  options: {
-    projectId: 'test',
-    // And all other Google PubSub properties
-  }
-});
-const topicName: string = 'some_topic';
-
-await pubsub.listen(topicName, {
-  autoAck: true,
-  onMessage: (data: EmittedMessage<{foo: string}>) => {
-    console.log(data.parsedData); // { foo: 'bar', time: {Date.now}, _eventName: 'some_topic' }
-    // do whatever you want. The message has already been acknowledged
-  },
-  onError: (error: Error) => {
-    // Handle error as you wish
-  }
-});
-
-await pubsub.emit(topicName, { foo: 'bar' });
+  options: {}
+})
 ```
-
-### Contribution
-
-Thank you for your future contribution 😁 Please follow [these instructions](CONTRIBUTING.md) before opening a pull request!
 
 ## API
 
-### `PubSubFactory.create({ transport, options })`
+Definition of each method and property
 
-The only static method from the `PubSubFactory` class. It initiates a new PubSub instance depending on the `transport`. By default, it connects to [Google Cloud PubSub](https://googleapis.dev/nodejs/pubsub/latest/index.html).
+### `PubSubFactory.create(params)`
 
-- `transport`: PubSub technology to use. Only `GOOGLE_PUBSUB` is available for now.
-- `options`: Options related to the transport.
-  - If `transport === Transport.GOOGLE_PUBSUB`, then have a look at the [Google Cloud PubSub config client](https://googleapis.dev/nodejs/pubsub/latest/global.html#ClientConfig).
-  - `debug`: Display logs if it is set to true. It uses a [pino logger](https://getpino.io/#/) and [pino-pretty](https://github.com/pinojs/pino-pretty) if `NODE_ENV` is not equal to `production`.
-  - `pinoOptions`: If `debug` is set to true, set the [pino logger options](https://getpino.io/#/docs/api?id=options). Default to `level: debug` and `prettyPrint: true` if `NODE_ENV` is not equal to `production`.
-  - `topicsPrefix`: Add a prefix to all created topics. Example: `topicsPrefix: 'my-topic'`, all topics will begin with `my-topic+{your topic name}`.
-  - `topicsSeparator`: Customize separator between topicsPrefix and topic name. Example: `topicsSeparator: '-'`, all topics will be  `{topic prefix}-{your topic name} (default to '+')`.
-  - `subscriptionsPrefix`: Add a prefix to all created subscriptions. Example: `subscriptionsPrefix: 'my-sub'`, all subscriptions will begin with `my-sub%{your topic name}`.
-  - `subscriptionsSeparator`: Customize separator between subscriptionsPrefix and topic name. Example: `subscriptionsSeparator: '-'`, all subscriptions will be  `{subscription prefix}-{your topic name} (default to '%')`.
-  - `namespace`: Add a namespace property to [Message attributes](https://googleapis.dev/nodejs/pubsub/latest/google.pubsub.v1.html#.PubsubMessage) when publishing on a topic.
-  - `environment`: Add a environment property to [Message attributes](https://googleapis.dev/nodejs/pubsub/latest/google.pubsub.v1.html#.PubsubMessage) when publishing on a topic.
+Create a PubSub instance.
 
-### `pubsub.listen(event, opts)`
+#### `params.transport`
 
-Listen to a specific event.
+Choose a transport behind the @algoan/pubsub lib.
 
-_NOTE_: It only uses the [Google Cloud subscription pull](https://cloud.google.com/pubsub/docs/pull) delivery for now.
+- `GOOGLE_PUBSUB`: create a Google Pub/Sub client. **Requires the [@google-cloud/pubsub](https://github.com/googleapis/nodejs-pubsub) lib**.
 
-- `event`: Name of the event.
-- `opts`: Options related to the Listener method
-  - `onMessage`: Method called when receiving a message
-  - `onError`: Method called when an error occurs
-  - `options`: Option related to the chosen transport
 
-If the chosen transport is Google Cloud PubSub, then `options` would be:
+#### `params.options`
 
-- `autoAck`: Automatically ACK an event as soon as it is received (default to `true`)
-- `subscriptionOptions`: Options related to the created Subscription:
-  - `name`: Custom name for the subscription. Default: `event` (also equal to the topic name)
-  - `get`: Options applied to the `getSubscription` method (have a look at [Subscription options](https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#get))
-  - `sub`: Options applied to the subscription instance (see also [`setOptions` method](https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#setOptions))
-  - `create`: Options applied to the `createSubscription` method (have a look at [Create Subscription options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#createSubscription))
-- `topicOptions`: Options applied to the created topic (have a look at [Topic options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#get))
-- `topicName`: Set the topic name. By default, it uses the default name with a prefix.
+Options related to the Pubsub client.
 
-### `pubsub.emit(event, payload, opts)`
+```typescript
+interface PubSubOptions {
+  /** Set the pubsub server host */
+  host?: string;
+  /** Set the pubsub server port */
+  port?: number;
+  /** Set to true if you want to create automatically all resources */
+  autoCreate?: boolean;
+  /** Set a prefix before each topics */
+  topicsPrefix?: string;
+  /** Set a prefix before each subscriptions */
+  subscriptionsPrefix?: string;
+  /** Authenticate to the real PubSub server */
+  authentication?: {
+    /** ID of the project */
+    id?: string
+    /** Path of the key file name **/
+    keyFilePath?: string
+  };
+  /** Common attributes to all messages. Can be any string properties. */
+  metadata?: {
+    [key: string]: string
+  };
+  /** Options applied to all subscriptions */
+  globalSubscribeOptions?: SubscribeOptions;
+  /** Options applied whenever a message is published */
+  globalPublishOptions?: Omit<PublishOptions, 'topicName'>;
+}
+```
 
-Emit a specific event with a payload. It added attributes in the message if you have added a namespace or an environment when setting the `PubSubFactory` class. It also adds an `_eventName` and a `time` property in the emitted `payload`.
+### The PubSub instance
 
-- `event`: Name of the event to emit.
-- `payload`: Payload to send. It will be buffered by Google, and then parsed by the [listen](#pubsublistenevent-options) method.
-- `opts`: Options related to the Emit method
-  - `metadata`: Custom metadata added to the message
-  - `options`: Option related to the chosen transport
+APIs related to the Pubsub instance.
 
-If the chosen transport is Google Cloud PubSub, then `options` would be:
+#### `pubsub.getNativeClient()`
 
-- `topicOptions`: Options applied to the created topic (have a look at [Topic options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#get))
-- `publishOptions`: Publish options set to the topic after its creation. Refer to [Publish Options](https://googleapis.dev/nodejs/pubsub/latest/global.html#PublishOptions)
-- `messageOptions`: Additional message options added to the message. Refer to [Message Options](https://googleapis.dev/nodejs/pubsub/latest/google.pubsub.v1.IPubsubMessage.html)
+This method returns the native Pubsub client from the transport.
 
-### `pubsub.unsubscribe(event)`
+Example:
 
-Stop the server connection for a given subscription.
+```typescript
+import { PubSub } from '@google-cloud/pubsub';
 
-- `event`: Name of of the event to stop listening for.
+const client: PubSub = pubsub.getNativeClient();
+```
+
+#### `pubsub.subscribe(channel, listener, subscribeOptions?)`
+
+Subscribe to a channel and listen to messages.
+
+- `channel` {string}: Name of the channel you want to subscribe to.
+- `listener` {(message: EmittedMessage) => void | Promise<void>}: Function to call whenever a message is sent through the channel.
+- `subscribeOptions` {SubscribeOption}:
+
+```typescript
+interface SubscribeOptions {
+  /** Name of the subscription if you've disabled the autoCreate mode */
+  name?: string;
+  /** Name of the topic if you've disabled the autoCreate mode */
+  topicName?: string;
+  /** Trigger this function when an error is thrown */
+  onError?(this: void, err: unknown): void;
+  /** Trigger this function when the connection is closed with the server */
+  onClose?(this: void): void;
+  /** If you've chosen the "STREAMING_PULL" mode, set options on streams */
+  streamingPullOptions?: {
+    /** Max number of streams (default to 5) */
+    maxStreams?: number;
+    /** Stream connection timeout (default to 30 min) */
+    timeout?: number;
+    /** Node streams high water mark to handle backpressure (default to 16 kB) */
+    highWaterMark?: number;
+  };
+  /** If you've chosen the PULL mode, set options on messages retrieval  */
+  pullOptions?: {
+    /** Maximum messages per batch */
+    maxMessages?: number;
+    /** Set an interval to regularly retrieve messages */
+    setInterval?: number;
+  };
+  /** If you have chosen the PUSH mode, set options specific to this mode */
+  pushOptions?: {
+    /** @required Push subscription Endpoint  */
+    endpoint: string;
+    /** Set to true if you want the message data to be directly delivered as the HTTP body response without metadata */
+    enablePayloadUnwrapping?: boolean;
+    /** Request Authorization header */
+    authorizationConfig?: {
+      /** Authorization JWT */
+      oidcJWT?: string;
+    };
+  };
+  /** Options related to the message acknowledgment */
+  messageAckOptions?: {
+    /** Minimum delay to set for the ack deadline (in milliseconds) */
+    minDeadlineMs?: number;
+    /** Maximum delay to set for the ack deadline (in milliseconds) */
+    maxDeadlineMs?: number;
+    /** Set to true if you want this library to call message ack */
+    autoAck?: boolean;
+    /** Set to true if you want this library to ack the message after the listener has been successfully called */
+    ackAfterListener?: boolean;
+    /** Set to true if you want this library to nack the message if the listener throws an error */
+    nackIfError?: boolean;
+    /** Set to true if you want to save ack messages */
+    retainAckMessages?: boolean;
+    /** Control ack requests batch */
+    batchOptions?: BatchOptions;
+  };
+  /**
+   * Set the subscription mode:
+   * - STREAMING_PULL: a long polling connection is opened between the client and the pubsub server
+   * - PULL: a short polling is done to retrieve messages
+   * - PUSH: the subscription calls a specific endpoint
+   */
+  mode?: 'STREAMING_PULL' | 'PULL' | 'PUSH';
+  /** Set a prefix to the subscription. Overrides the global prefix */
+  prefix?: string;
+  /** Control incoming message flows to avoid overwhelming your app */
+  flowControl?: {
+    /** Max message to handle before pausing the listening process */
+    maxMessages?: number;
+    /** Max memory value to handle before pausing the listening process */
+    maxBytes?: number;
+  };
+  /** Set to true if you want to enable the exactly once delivery mode */
+  exactlyOnceDelivery?: boolean;
+  /** Set to true if the subscription enables message ordering */
+  enableMessageOrdering?: boolean;
+  /** Retry policy settings */
+  retryPolicy?: {
+    /**
+     * Exponential backoff settings
+     * @link https://github.com/coveooss/exponential-backoff
+     */
+    backoffSettings?: BackoffOptions;
+  };
+  /** Filters messages by attributes */
+  filter?: string;
+  /** Set the duration of the message retention */
+  messageRetentionDuration?: number;
+  /** Option related to the dead letter queue */
+  deadLetterPolicy?: {
+    /** Name of the channel */
+    channel?: string;
+    /** Max number of delivery attempts */
+    maxDeliveryAttempts?: number;
+  };
+  /** Options related to the subscription expiration policy */
+  expirationPolicy?: {
+    /** TTL to set for the subscription in hours */
+    ttlHours?: number;
+  };
+}
+```
+
+_Example_:
+
+```typescript
+import { PubSubFactory, EmittedMessage } from '@algoan/pubsub';
+
+const pubsub = PubSubFactory.create({ transport: 'GOOGLE_PUBSUB'});
+
+await pubsub.subscribe('my_channel', (message: EmittedMessage) => {
+  console.log(message);
+}, {
+  messageAckOptions: {
+    autoAck: true,
+  }
+})
+```
+
+#### `pubsub.unsubscribe(channel)`
+
+Stop listening to a specific channel. Close the connection between the client and the server.
+
+```typescript
+import { PubSubFactory, EmittedMessage } from '@algoan/pubsub';
+
+const pubsub = PubSubFactory.create({ transport: 'GOOGLE_PUBSUB'});
+
+await pubsub.subscribe('my_channel', (message: EmittedMessage) => {
+  console.log(message);
+}, {
+  messageAckOptions: {
+    autoAck: true,
+  }
+})
+
+// No more message will be listened?
+await pubsub.unsubscribe('my_channel');
+```
+
+#### `pubsub.publish(channel, payload, publishOptions?)`
+
+Publish one or several messages to a specific channel.
+
+- `channel` {string}: Name of the channel you want to publish to.
+- `payload` {object}: a payload contains two properties. 
+  - `attributes`: Metadata regarding the message. It is an object of string properties.
+  - `data`: An object with any properties. The main content of the message.
+  - `orderingKey`: If the message ordering is enabled, set a key to messages.
+- `publishOptions` {object}: Options related to the publish method.
+
+```typescript
+interface PublishOptions {
+  /** Name of the topic (useful if it is already created) */
+  topicName?: string;
+  /** Enable the message ordering option */
+  enableMessageOrdering?: boolean;
+  /** Retry settings for the publish method */
+  retrySettings?: {
+    /** Back off settings to retry publish */
+    backoffSetting?: BackoffOptions;
+  };
+  /** Control the number of messages or max memory */
+  flowControlOptions?: {
+    /** Define the max memory allowed in Bytes */
+    maxBytes?: number;
+    /** Define the maximum number of message to send at once */
+    maxMessages?: number;
+  };
+  /** Batch options if you prefer publishing message per batch */
+  batchOptions?: {
+    /** Max messages to store in the internal queue */
+    maxMessages?: number;
+    /** Max memory allowed in the internal queue */
+    maxBytes?: number;
+    /** Max duration before sending the batch of requests */
+    maxMs?: number;
+  };
+}
+```
+
+#### `pubsub.setGlobalOptions(options)`
+
+Update the PubSub client option object at runtime. 
+
+- `options` {object}: Refer to the [PubSubOptions interface](#paramsoptions)
+
+#### `pubsub.close()`
+
+Close all connections to the server.
+
+# Contribution
+
+Thank you for your future contribution 😁 Please follow [these instructions](CONTRIBUTING.md) before opening a pull request!

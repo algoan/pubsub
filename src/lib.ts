@@ -8,7 +8,15 @@ export interface AnyProperties<T = any> {
   [key: string]: T;
 }
 
-interface Authentication {}
+/**
+ * Authentication options related to the transport
+ */
+interface Authentication {
+  /** ID of the project */
+  id?: string;
+  /** If a key is defined in a file, specify the path */
+  keyFilePath?: string;
+}
 
 /**
  * Options related to the subscribe method

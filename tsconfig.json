@@ -1,16 +1,18 @@
 {
     "compilerOptions": {
-      "target": "es2017",
-      "module": "commonjs",
-      "lib": ["es2015", "es6", "es7"],
+      "target": "es2022",
+      "module": "commonJS",
+      "lib": ["es2022"],
       "allowJs": false,
       "checkJs": false,
       "declaration": true,
+      "inlineSources": false,
       "outDir": "dist",
       "removeComments": true,
       "noEmit": false,
       "importHelpers": false,
       "isolatedModules": false,
+      "pretty": true,
   
       "strict": true,
       "noImplicitAny": true,
@@ -23,7 +25,7 @@
       "noImplicitReturns": true,
       "noFallthroughCasesInSwitch": true,
   
-      "moduleResolution": "node",
+      "moduleResolution": "Node",
       "allowSyntheticDefaultImports": false,
   
       "inlineSourceMap": false,
