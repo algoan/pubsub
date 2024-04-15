@@ -5,9 +5,9 @@ name: Algoan PubSub Test and Publish Workflow
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, alpha ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, alpha ]
   workflow_dispatch:
     inputs:
       ref:
@@ -31,23 +31,21 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.version.node }}
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.version.node }}
         cache: 'npm'
     - name: Get GCloud CLI to install pubsub emulator
-      uses: google-github-actions/setup-gcloud@v0
-    - name: Update GCloud Components
-      run: gcloud components update --quiet
-    - name: Install GCloud beta
-      run: gcloud components install beta --quiet
-    - name: Install pubsub-emulator
-      run: gcloud components install pubsub-emulator --quiet
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        install_components: beta,pubsub-emulator
     - run: npm i -g npm@${{ matrix.version.npm }}
     - run: npm i
-    - run: npm run cover
+    - name: Type check with TypeScript
+      run: npm run compile -- --noEmit
+    - run: npm run test:cov
 
   publish:
     runs-on: ubuntu-latest
@@ -56,12 +54,12 @@ jobs:
       - test
     if: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
         ref: ${{ inputs.ref }}
     - name: Use Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '20.x'
         cache: 'npm'
