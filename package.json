@@ -34,7 +34,7 @@
     "@algoan/eslint-config": "^2.1.1",
     "@amanda-mitchell/semantic-release-npm-multiple": "github:algoan/semantic-release-npm-multiple#fd763c631503cb88dd143ce72c5838aa1b19ace4",
     "@ava/typescript": "^4.1.0",
-    "@commitlint/cli": "^19.0.3",
+    "@commitlint/cli": "^19.3.0",
     "@commitlint/config-conventional": "^19.0.3",
     "@semantic-release/git": "^10.0.1",
     "@types/sinon": "^17.0.3",
