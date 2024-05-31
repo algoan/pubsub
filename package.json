@@ -1,19 +1,20 @@
 {
   "name": "@algoan/pubsub",
   "version": "6.2.0",
-  "description": "PubSub Library for algoan",
+  "description": "A Publish/Subscribe library made to be agnostic and cloud provider independant",
   "main": "./dist/src/index.js",
   "typings": "./dist/src/index.d.ts",
   "scripts": {
     "clean": "rimraf ./dist ./coverage ./.nyc_output ./node_modules",
-    "compile": "tsc -p .",
+    "compile": "rimraf ./dist && tsc -p .",
     "prepare": "husky install",
     "commit": "git-cz",
-    "pretest": "npm run compile && npm run lint",
-    "prettier": "prettier --write '{src,test,examples}/**/*.{js,ts}'",
+    "pretest": "npm run lint",
+    "prettier": "prettier --write '{src,test,examples}/**/*.ts'",
     "lint": "eslint ./src/**/*.ts",
-    "test": "ava --color --verbose",
-    "cover": "nyc --reporter=html --reporter=lcov npm test",
+    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest --colors --verbose --openHandlesTimeout=10000",
+    "test:debug": "node --inspect-brk --experimental-vm-modules ./node_modules/jest/bin/jest.js --colors --verbose",
+    "test:cov": "npm test -- --coverage",
     "semantic-release": "semantic-release"
   },
   "repository": {
@@ -26,52 +27,45 @@
     "google-pubsub"
   ],
   "files": [
-    "dist/src/"
+    "dist/"
   ],
   "author": "algoan",
   "license": "ISC",
   "devDependencies": {
     "@algoan/eslint-config": "^2.1.1",
     "@amanda-mitchell/semantic-release-npm-multiple": "github:algoan/semantic-release-npm-multiple#fd763c631503cb88dd143ce72c5838aa1b19ace4",
-    "@ava/typescript": "^4.1.0",
     "@commitlint/cli": "^19.0.3",
     "@commitlint/config-conventional": "^19.0.3",
     "@semantic-release/git": "^10.0.1",
-    "@types/sinon": "^17.0.3",
+    "@types/jest": "^29.5.12",
     "@types/uuid": "^9.0.8",
-    "ava": "^5.3.1",
     "commitizen": "^4.3.0",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.57.0",
     "google-pubsub-emulator": "^7.1.0",
     "husky": "^9.0.11",
+    "jest": "^29.7.0",
     "lint-staged": "^15.2.2",
-    "nyc": "^15.1.0",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.5",
     "semantic-release": "^23.0.2",
-    "sinon": "^17.0.1",
-    "typescript": "^5.3.3",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.4.2",
     "uuid": "^9.0.1"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "^4.3.2",
-    "pino": "^8.18.0"
+    "exponential-backoff": "^3.1.1"
+  },
+  "peerDependencies": {
+    "@google-cloud/pubsub": ">= 4.x < 5.x"
+  },
+  "peerDependenciesMeta": {
+    "@google-cloud/pubsub": {
+      "optional": true
+    }
   },
   "engines": {
-    "node": ">= 12"
-  },
-  "ava": {
-    "files": [
-      "test/**/*.test.ts"
-    ],
-    "typescript": {
-      "rewritePaths": {
-        "test/": "dist/test/"
-      },
-      "compile": false
-    },
-    "failFast": true
+    "node": ">= 14"
   },
   "publishConfig": {
     "access": "public"
@@ -84,14 +78,6 @@
   "lint-staged": {
     "{src,test}/**/*.ts": [
       "prettier --list-different \"{src,test}/**/*.ts\""
-    ]
-  },
-  "nyc": {
-    "check-coverage": false,
-    "per-file": true,
-    "cache": false,
-    "extension": [
-      ".ts"
     ]
   }
 }
