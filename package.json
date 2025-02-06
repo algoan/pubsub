@@ -74,7 +74,7 @@
     "failFast": true
   },
   "publishConfig": {
-    "access": "public"
+    "registry": "https://npm.pkg.github.com/ChexyDevelopment"
   },
   "config": {
     "commitizen": {
