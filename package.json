@@ -56,7 +56,7 @@
   },
   "dependencies": {
     "@google-cloud/pubsub": "^4.3.2",
-    "pino": "^8.18.0"
+    "pino": "^9.6.0"
   },
   "engines": {
     "node": ">= 12"
