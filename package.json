@@ -55,7 +55,7 @@
     "uuid": "^9.0.1"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "^4.3.2",
+    "@google-cloud/pubsub": "^4.10.0",
     "pino": "^9.6.0"
   },
   "engines": {
