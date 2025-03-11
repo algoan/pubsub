@@ -37,7 +37,7 @@
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",
     "@semantic-release/git": "^10.0.1",
-    "@types/sinon": "^17.0.3",
+    "@types/sinon": "^17.0.4",
     "@types/uuid": "^9.0.8",
     "ava": "^5.3.1",
     "commitizen": "^4.3.1",
