@@ -16,6 +16,7 @@ import { pino } from 'pino';
 import { EmitOptions, ListenOptions } from '..';
 import { ExtendedMessage } from './ExtendedMessage';
 import {
+  DeadLetterOptions,
   GCListenOptions,
   GCPubSub,
   GCSubscriptionOptions,
@@ -92,6 +93,11 @@ export class GoogleCloudPubSub implements GCPubSub {
    */
   private readonly logger: pino.Logger;
 
+  /**
+   * Dead letter policy options applied when creating subscriptions
+   */
+  private readonly deadLetterOptions?: DeadLetterOptions;
+
   constructor(options: GooglePubSubOptions = {}) {
     this.client = new GPubSub(options);
     this.subscriptionsPrefix = options.subscriptionsPrefix;
@@ -102,6 +108,7 @@ export class GoogleCloudPubSub implements GCPubSub {
     this.environment = options.environment;
     this.topics = new Map();
     this.subscriptions = new Map();
+    this.deadLetterOptions = options.deadLetterOptions;
     this.logger = pino({
       level: options.debug === true ? 'debug' : 'silent',
       ...options.pinoOptions,
@@ -287,13 +294,96 @@ export class GoogleCloudPubSub implements GCPubSub {
       throw new Error(`[@algoan/pubsub] The subscription ${subscriptionName} is not found in topic ${topic.name}`);
     }
 
+    const deadLetterCreateOptions = this.buildDeadLetterCreateOptions(options.create);
+
     const [subscription]: GetSubscriptionResponse | CreateSubscriptionResponse = exists
       ? await sub.get(options?.get)
-      : await sub.create(options?.create);
+      : await sub.create(deadLetterCreateOptions);
+
+    if (!exists && this.deadLetterOptions !== undefined) {
+      await this.setupDeadLetterIamPermissions(subscription, this.deadLetterOptions.deadLetterTopicName);
+    }
 
     this.subscriptions.set(subscriptionName, subscription);
 
     return subscription;
+  }
+
+  /**
+   * Merges dead letter policy into CreateSubscriptionOptions if deadLetterOptions is configured
+   */
+  private buildDeadLetterCreateOptions(
+    createOptions?: GCSubscriptionOptions['create'],
+  ): GCSubscriptionOptions['create'] {
+    if (this.deadLetterOptions === undefined) {
+      return createOptions;
+    }
+
+    return {
+      ...createOptions,
+      deadLetterPolicy: {
+        deadLetterTopic: this.deadLetterOptions.deadLetterTopicName,
+        maxDeliveryAttempts: this.deadLetterOptions.maxDeliveryAttempts ?? 5,
+        ...createOptions?.deadLetterPolicy,
+      },
+    };
+  }
+
+  /**
+   * Grants the required IAM permissions for dead-letter forwarding.
+   * Pub/Sub service account needs:
+   * - roles/pubsub.publisher on the dead-letter topic
+   * - roles/pubsub.subscriber on the source subscription
+   */
+  private async setupDeadLetterIamPermissions(subscription: Subscription, deadLetterTopicName: string): Promise<void> {
+    const projectId: string = await this.client.auth.getProjectId();
+    const projectNumber = await this.getProjectNumber(projectId);
+    const serviceAccount = `serviceAccount:service-${projectNumber}@gcp-sa-pubsub.iam.gserviceaccount.com`;
+
+    const deadLetterTopic: Topic = this.client.topic(deadLetterTopicName);
+
+    const [topicPolicy] = await deadLetterTopic.iam.getPolicy();
+    const updatedTopicPolicy = {
+      ...topicPolicy,
+      bindings: [
+        ...(topicPolicy.bindings ?? []),
+        { role: 'roles/pubsub.publisher', members: [serviceAccount] },
+      ],
+    };
+    await deadLetterTopic.iam.setPolicy(updatedTopicPolicy);
+
+    const [subPolicy] = await subscription.iam.getPolicy();
+    const updatedSubPolicy = {
+      ...subPolicy,
+      bindings: [
+        ...(subPolicy.bindings ?? []),
+        { role: 'roles/pubsub.subscriber', members: [serviceAccount] },
+      ],
+    };
+    await subscription.iam.setPolicy(updatedSubPolicy);
+
+    this.logger.debug(
+      { deadLetterTopicName, serviceAccount },
+      'Dead-letter IAM permissions granted',
+    );
+  }
+
+  /**
+   * Resolves the numeric GCP project number for a given project ID.
+   * Uses the Cloud Resource Manager REST API v3 via the authenticated client.
+   */
+  private async getProjectNumber(projectId: string): Promise<string> {
+    const url = `https://cloudresourcemanager.googleapis.com/v3/projects/${projectId}`;
+    const response = await this.client.auth.request<{ name: string }>({ url });
+    const match = response.data.name.match(/^projects\/(\d+)$/);
+
+    if (match === null) {
+      throw new Error(
+        `[@algoan/pubsub] Unexpected project resource name format: ${response.data.name}`,
+      );
+    }
+
+    return match[1];
   }
 
   /**

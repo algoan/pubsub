@@ -14,6 +14,16 @@ import { pino } from 'pino';
 import { PubSub } from '..';
 
 /**
+ * Dead letter policy options for subscription creation
+ */
+export interface DeadLetterOptions {
+  /** Full topic name for dead-letter messages (e.g. projects/my-project/topics/my-dead-letter-topic) */
+  deadLetterTopicName: string;
+  /** Maximum number of delivery attempts before forwarding to dead-letter topic (min: 5, max: 100) */
+  maxDeliveryAttempts?: number;
+}
+
+/**
  * Extends Google PubSub config
  */
 export interface GooglePubSubOptions extends ClientConfig {
@@ -25,6 +35,8 @@ export interface GooglePubSubOptions extends ClientConfig {
   environment?: string;
   debug?: boolean;
   pinoOptions?: pino.LoggerOptions;
+  /** Dead letter policy applied when creating new subscriptions */
+  deadLetterOptions?: DeadLetterOptions;
 }
 
 /**
