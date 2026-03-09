@@ -388,18 +388,32 @@ export class GoogleCloudPubSub implements GCPubSub {
     const deadLetterTopic: Topic = this.client.topic(deadLetterTopicName);
 
     const [topicPolicy] = await deadLetterTopic.iam.getPolicy();
-    const updatedTopicPolicy = {
-      ...topicPolicy,
-      bindings: [...(topicPolicy.bindings ?? []), { role: 'roles/pubsub.publisher', members: [serviceAccount] }],
-    };
-    await deadLetterTopic.iam.setPolicy(updatedTopicPolicy);
+    const topicBindings = topicPolicy.bindings ?? [];
+    const topicAlreadyBound = topicBindings.some(
+      (b) => b.role === 'roles/pubsub.publisher' && b.members?.includes(serviceAccount),
+    );
+
+    if (!topicAlreadyBound) {
+      const updatedTopicPolicy = {
+        ...topicPolicy,
+        bindings: [...topicBindings, { role: 'roles/pubsub.publisher', members: [serviceAccount] }],
+      };
+      await deadLetterTopic.iam.setPolicy(updatedTopicPolicy);
+    }
 
     const [subPolicy] = await subscription.iam.getPolicy();
-    const updatedSubPolicy = {
-      ...subPolicy,
-      bindings: [...(subPolicy.bindings ?? []), { role: 'roles/pubsub.subscriber', members: [serviceAccount] }],
-    };
-    await subscription.iam.setPolicy(updatedSubPolicy);
+    const subBindings = subPolicy.bindings ?? [];
+    const subAlreadyBound = subBindings.some(
+      (b) => b.role === 'roles/pubsub.subscriber' && b.members?.includes(serviceAccount),
+    );
+
+    if (!subAlreadyBound) {
+      const updatedSubPolicy = {
+        ...subPolicy,
+        bindings: [...subBindings, { role: 'roles/pubsub.subscriber', members: [serviceAccount] }],
+      };
+      await subscription.iam.setPolicy(updatedSubPolicy);
+    }
 
     this.logger.debug({ deadLetterTopicName, serviceAccount }, 'Dead-letter IAM permissions granted');
   }
@@ -410,14 +424,9 @@ export class GoogleCloudPubSub implements GCPubSub {
    */
   private async getProjectNumber(projectId: string): Promise<string> {
     const url = `https://cloudresourcemanager.googleapis.com/v3/projects/${projectId}`;
-    const response = await this.client.auth.request<{ name: string }>({ url });
-    const match = response.data.name.match(/^projects\/(\d+)$/);
+    const response = await this.client.auth.request<{ projectNumber: string }>({ url });
 
-    if (match === null) {
-      throw new Error(`[@algoan/pubsub] Unexpected project resource name format: ${response.data.name}`);
-    }
-
-    return match[1];
+    return response.data.projectNumber;
   }
 
   /**
