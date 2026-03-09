@@ -17,8 +17,8 @@ import { PubSub } from '..';
  * Dead letter policy options for subscription creation
  */
 export interface DeadLetterOptions {
-  /** Full topic name for dead-letter messages (e.g. projects/my-project/topics/my-dead-letter-topic) */
-  deadLetterTopicName: string;
+  /** Optional override for the dead-letter topic name. Defaults to <subscription-name>-deadletter */
+  deadLetterTopicName?: string;
   /** Maximum number of delivery attempts before forwarding to dead-letter topic (min: 5, max: 100) */
   maxDeliveryAttempts?: number;
 }
