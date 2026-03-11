@@ -1,8 +1,6 @@
 import {
   Attributes,
-  CreateSubscriptionResponse,
   ExistsResponse,
-  GetSubscriptionResponse,
   GetTopicOptions,
   GetTopicResponse,
   Message,
@@ -24,6 +22,8 @@ import {
   SubscriptionMap,
   TopicMap,
 } from './lib';
+
+const defaultMaxDeliveryAttempts = 5;
 
 /**
  * Google PubSub SDK
@@ -294,15 +294,21 @@ export class GoogleCloudPubSub implements GCPubSub {
       throw new Error(`[@algoan/pubsub] The subscription ${subscriptionName} is not found in topic ${topic.name}`);
     }
 
-    const resolvedDeadLetterTopicName = await this.resolveDeadLetterTopicName(subscriptionName);
-    const deadLetterCreateOptions = this.buildDeadLetterCreateOptions(options.create, resolvedDeadLetterTopicName);
+    let subscription: Subscription;
 
-    const [subscription]: GetSubscriptionResponse | CreateSubscriptionResponse = exists
-      ? await sub.get(options?.get)
-      : await sub.create(deadLetterCreateOptions);
+    if (exists) {
+      [subscription] = await sub.get(options?.get);
+    } else {
+      const deadLetterTopicName = await this.resolveDeadLetterTopicName(
+        subscriptionName,
+        subOptions?.deadLetterTopicName,
+      );
+      const deadLetterCreateOptions = this.buildDeadLetterCreateOptions(options.create, deadLetterTopicName);
+      [subscription] = await sub.create(deadLetterCreateOptions);
 
-    if (!exists && resolvedDeadLetterTopicName !== undefined) {
-      await this.setupDeadLetterIamPermissions(subscription, resolvedDeadLetterTopicName);
+      if (deadLetterTopicName !== undefined) {
+        await this.setupDeadLetterIamPermissions(subscription, deadLetterTopicName);
+      }
     }
 
     this.subscriptions.set(subscriptionName, subscription);
@@ -311,45 +317,53 @@ export class GoogleCloudPubSub implements GCPubSub {
   }
 
   /**
-   * Resolves the fully-qualified dead-letter topic name for a given subscription.
-   * If deadLetterOptions is not set, returns undefined.
-   * Uses deadLetterTopicName override if provided, otherwise derives it as <subscriptionName>-deadletter.
-   * Auto-creates the dead-letter topic and its drain subscription if they do not exist.
+   * Resolves the dead-letter topic name for a new subscription using this priority:
+   * 1. Per-subscription override (subOptions.deadLetterTopicName)
+   * 2. Instance-level default (deadLetterOptions.deadLetterTopicName)
+   * 3. Auto-derived: projects/<projectId>/<sanitizedSubscriptionName>-deadletter
+   * (sanitized because subscription separators like '%' are invalid in topic names)
+   * Returns undefined when deadLetterOptions is not configured on the instance.
+   * Explicit names (cases 1 & 2) must be fully-qualified resource names.
    */
-  private async resolveDeadLetterTopicName(subscriptionName: string): Promise<string | undefined> {
+  private async resolveDeadLetterTopicName(
+    subscriptionName: string,
+    perSubscriptionOverride?: string,
+  ): Promise<string | undefined> {
     if (this.deadLetterOptions === undefined) {
       return undefined;
     }
 
-    if (this.deadLetterOptions.deadLetterTopicName !== undefined) {
-      return this.deadLetterOptions.deadLetterTopicName;
+    const explicitName = perSubscriptionOverride ?? this.deadLetterOptions.deadLetterTopicName;
+
+    if (explicitName !== undefined) {
+      await this.getOrCreateTopic(explicitName);
+
+      return explicitName;
     }
 
     const projectId = await this.client.auth.getProjectId();
-    const shortName = `${subscriptionName}-deadletter`;
+    const sanitizedName = subscriptionName.replace(/[^a-zA-Z0-9\-_.~]/g, '-');
+    const shortName = `${sanitizedName}-deadletter`;
     const fullTopicName = `projects/${projectId}/topics/${shortName}`;
 
-    const dltTopic = await this.getOrCreateTopic(fullTopicName);
-    await this.getOrCreateDeadLetterDrainSubscription(dltTopic, shortName);
+    await this.getOrCreateTopic(fullTopicName);
+    await this.getOrCreateDeadLetterDrainSubscription(fullTopicName, `${shortName}-sub`);
 
     return fullTopicName;
   }
 
   /**
-   * Ensures a drain subscription exists on the dead-letter topic so messages are not lost.
-   * The subscription is named <dlt-short-name>-sub.
+   * Ensures a drain subscription exists on the dead-letter topic so that
+   * GCP does not discard dead-lettered messages. Only called for auto-created
+   * dead-letter topics; user-provided topics are the caller's responsibility.
    */
-  private async getOrCreateDeadLetterDrainSubscription(dltTopic: Topic, dltShortName: string): Promise<void> {
-    const drainSubName = `${dltShortName}-sub`;
-    const sub = dltTopic.subscription(drainSubName);
-    const [exists] = await sub.exists();
+  private async getOrCreateDeadLetterDrainSubscription(dltTopicName: string, drainSubName: string): Promise<void> {
+    const drainSub = this.client.topic(dltTopicName).subscription(drainSubName);
+    const [exists] = await drainSub.exists();
 
     if (!exists) {
-      await sub.create();
-      this.logger.debug(
-        { dltTopicName: dltTopic.name, drainSubName },
-        'Created drain subscription on dead-letter topic',
-      );
+      await drainSub.create();
+      this.logger.debug({ dltTopicName, drainSubName }, 'Created drain subscription on dead-letter topic');
     }
   }
 
@@ -368,8 +382,7 @@ export class GoogleCloudPubSub implements GCPubSub {
       ...createOptions,
       deadLetterPolicy: {
         deadLetterTopic: resolvedDeadLetterTopicName,
-        maxDeliveryAttempts: this.deadLetterOptions.maxDeliveryAttempts ?? 5,
-        ...createOptions?.deadLetterPolicy,
+        maxDeliveryAttempts: this.deadLetterOptions.maxDeliveryAttempts ?? defaultMaxDeliveryAttempts,
       },
     };
   }
@@ -402,28 +415,21 @@ export class GoogleCloudPubSub implements GCPubSub {
     }
 
     const [subPolicy] = await subscription.iam.getPolicy();
-    const subBindings = subPolicy.bindings ?? [];
-    const subAlreadyBound = subBindings.some(
-      (b) => b.role === 'roles/pubsub.subscriber' && b.members?.includes(serviceAccount),
-    );
-
-    if (!subAlreadyBound) {
-      const updatedSubPolicy = {
-        ...subPolicy,
-        bindings: [...subBindings, { role: 'roles/pubsub.subscriber', members: [serviceAccount] }],
-      };
-      await subscription.iam.setPolicy(updatedSubPolicy);
-    }
+    const updatedSubPolicy = {
+      ...subPolicy,
+      bindings: [...(subPolicy.bindings ?? []), { role: 'roles/pubsub.subscriber', members: [serviceAccount] }],
+    };
+    await subscription.iam.setPolicy(updatedSubPolicy);
 
     this.logger.debug({ deadLetterTopicName, serviceAccount }, 'Dead-letter IAM permissions granted');
   }
 
   /**
    * Resolves the numeric GCP project number for a given project ID.
-   * Uses the Cloud Resource Manager REST API v3 via the authenticated client.
+   * Uses the Cloud Resource Manager REST API v1 where projectNumber is an explicit top-level field.
    */
   private async getProjectNumber(projectId: string): Promise<string> {
-    const url = `https://cloudresourcemanager.googleapis.com/v3/projects/${projectId}`;
+    const url = `https://cloudresourcemanager.googleapis.com/v1/projects/${projectId}`;
     const response = await this.client.auth.request<{ projectNumber: string }>({ url });
 
     return response.data.projectNumber;

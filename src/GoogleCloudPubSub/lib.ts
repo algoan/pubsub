@@ -17,7 +17,12 @@ import { PubSub } from '..';
  * Dead letter policy options for subscription creation
  */
 export interface DeadLetterOptions {
-  /** Optional override for the dead-letter topic name. Defaults to <subscription-name>-deadletter */
+  /**
+   * Fully-qualified dead-letter topic name shared across all subscriptions
+   * (e.g. projects/<project>/topics/<name>).
+   * When omitted, each subscription automatically gets its own
+   * <subscriptionName>-deadletter topic.
+   */
   deadLetterTopicName?: string;
   /** Maximum number of delivery attempts before forwarding to dead-letter topic (min: 5, max: 100) */
   maxDeliveryAttempts?: number;
@@ -84,6 +89,13 @@ export interface GCSubscriptionOptions {
   sub?: SubscriptionOptions;
   /** Options applied to the createSubscription  */
   create?: CreateSubscriptionOptions;
+  /**
+   * Per-subscription override for the dead-letter topic name.
+   * Falls back to deadLetterOptions.deadLetterTopicName on the instance,
+   * then auto-derives <subscriptionName>-deadletter if neither is provided.
+   * Only used when deadLetterOptions is configured on the GoogleCloudPubSub instance.
+   */
+  deadLetterTopicName?: string;
 }
 
 /**

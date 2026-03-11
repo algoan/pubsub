@@ -541,3 +541,170 @@ test('GPS013 - should throw an error because the subscription is not created', a
     );
   }
 });
+
+test('GPS014a - should auto-create a per-subscription dead-letter topic named <subscriptionName>-deadletter', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = generateRandomTopicName();
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      deadLetterOptions: {},
+    },
+  });
+
+  const authRequestStub = sinon.stub(pubsub.client.auth, 'request').resolves({
+    data: { projectNumber: '123456789' },
+  } as any);
+
+  const iamGetPolicyStub = sinon.stub().resolves([{ bindings: [] }]);
+  const iamSetPolicyStub = sinon.stub().resolves([{}]);
+
+  const originalTopic = pubsub.client.topic.bind(pubsub.client);
+  const topicStub = sinon.stub(pubsub.client, 'topic').callsFake((name: string) => {
+    const topic = originalTopic(name);
+    topic.iam.getPolicy = iamGetPolicyStub;
+    topic.iam.setPolicy = iamSetPolicyStub;
+    return topic;
+  });
+
+  try {
+    await pubsub.listen(topicName);
+
+    const [isSubExisting] = await pubsub.client.subscription(topicName).exists();
+    const sanitizedSubName = topicName.replace(/[^a-zA-Z0-9\-_.~]/g, '-');
+    const dltShortName = `${sanitizedSubName}-deadletter`;
+    const [isDltTopicExisting] = await pubsub.client.topic(dltShortName).exists();
+    const [isDrainSubExisting] = await pubsub.client.subscription(`${dltShortName}-sub`).exists();
+
+    t.true(isSubExisting, 'subscription should be created');
+    t.true(isDltTopicExisting, 'dead-letter topic should be auto-created per subscription');
+    t.true(
+      isDrainSubExisting,
+      'drain subscription should be auto-created on dead-letter topic to prevent message loss',
+    );
+
+    t.true(authRequestStub.calledOnce, 'should fetch project number for IAM setup');
+    t.true(iamGetPolicyStub.calledOnce, 'should get dead-letter topic IAM policy');
+
+    const setPolicyCall = iamSetPolicyStub.getCall(0);
+    const bindings = setPolicyCall.args[0].bindings as Array<{ role: string; members: string[] }>;
+    t.true(
+      bindings.some(
+        (b) =>
+          b.role === 'roles/pubsub.publisher' &&
+          b.members.includes('serviceAccount:service-123456789@gcp-sa-pubsub.iam.gserviceaccount.com'),
+      ),
+      'should grant publisher role on dead-letter topic to Pub/Sub service account',
+    );
+  } finally {
+    authRequestStub.restore();
+    topicStub.restore();
+  }
+});
+
+test('GPS014b - should skip dead-letter setup entirely when calling listen on an already-existing subscription', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = generateRandomTopicName();
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      deadLetterOptions: {},
+    },
+  });
+
+  const authRequestStub = sinon.stub(pubsub.client.auth, 'request').resolves({
+    data: { projectNumber: '123456789' },
+  } as any);
+
+  const iamGetPolicyStub = sinon.stub().resolves([{ bindings: [] }]);
+  const iamSetPolicyStub = sinon.stub().resolves([{}]);
+
+  const originalTopic = pubsub.client.topic.bind(pubsub.client);
+  const topicStub = sinon.stub(pubsub.client, 'topic').callsFake((name: string) => {
+    const topic = originalTopic(name);
+    topic.iam.getPolicy = iamGetPolicyStub;
+    topic.iam.setPolicy = iamSetPolicyStub;
+    return topic;
+  });
+
+  try {
+    await pubsub.listen(topicName);
+
+    iamGetPolicyStub.resetHistory();
+    iamSetPolicyStub.resetHistory();
+    authRequestStub.resetHistory();
+
+    await pubsub.listen(topicName);
+
+    t.true(authRequestStub.notCalled, 'should not re-run IAM setup for an existing subscription');
+    t.true(iamGetPolicyStub.notCalled, 'should not call getPolicy again for an existing subscription');
+    t.true(iamSetPolicyStub.notCalled, 'should not call setPolicy again for an existing subscription');
+  } finally {
+    authRequestStub.restore();
+    topicStub.restore();
+  }
+});
+
+test('GPS014d - should use per-subscription deadLetterTopicName override instead of auto-deriving', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = generateRandomTopicName();
+  const customDltName: string = generateRandomTopicName();
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      deadLetterOptions: {},
+    },
+  });
+
+  await pubsub.client.createTopic(customDltName);
+
+  const authRequestStub = sinon.stub(pubsub.client.auth, 'request').resolves({
+    data: { projectNumber: '123456789' },
+  } as any);
+
+  const iamGetPolicyStub = sinon.stub().resolves([{ bindings: [] }]);
+  const iamSetPolicyStub = sinon.stub().resolves([{}]);
+
+  const originalTopic = pubsub.client.topic.bind(pubsub.client);
+  const topicStub = sinon.stub(pubsub.client, 'topic').callsFake((name: string) => {
+    const topic = originalTopic(name);
+    topic.iam.getPolicy = iamGetPolicyStub;
+    topic.iam.setPolicy = iamSetPolicyStub;
+    return topic;
+  });
+
+  try {
+    await pubsub.listen(topicName, {
+      options: {
+        subscriptionOptions: {
+          deadLetterTopicName: customDltName,
+        },
+      },
+    });
+
+    const [isAutoDltExisting] = await pubsub.client.topic(`${topicName}-deadletter`).exists();
+    const [isCustomDltExisting] = await pubsub.client.topic(customDltName).exists();
+
+    t.false(isAutoDltExisting, 'auto-derived dead-letter topic should not be created');
+    t.true(isCustomDltExisting, 'the custom dead-letter topic provided via subscriptionOptions should be used');
+  } finally {
+    authRequestStub.restore();
+    topicStub.restore();
+  }
+});
+
+test('GPS014c - should not create dead-letter resources when deadLetterOptions is not set', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = generateRandomTopicName();
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+    },
+  });
+
+  await pubsub.listen(topicName);
+
+  const [isDltTopicExisting] = await pubsub.client.topic(`${topicName}-deadletter`).exists();
+
+  t.false(isDltTopicExisting);
+});
