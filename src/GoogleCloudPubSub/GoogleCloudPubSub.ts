@@ -334,14 +334,20 @@ export class GoogleCloudPubSub implements GCPubSub {
     }
 
     const explicitName = perSubscriptionOverride ?? this.deadLetterOptions.deadLetterTopicName;
+    const projectId = await this.client.auth.getProjectId();
 
     if (explicitName !== undefined) {
-      await this.getOrCreateTopic(explicitName);
+      const fullExplicitName = explicitName.startsWith('projects/')
+        ? explicitName
+        : `projects/${projectId}/topics/${explicitName}`;
 
-      return explicitName;
+      const shortExplicitName = fullExplicitName.split('/').pop()!;
+
+      await this.getOrCreateTopic(fullExplicitName);
+      await this.getOrCreateDeadLetterDrainSubscription(fullExplicitName, `${shortExplicitName}-sub`);
+
+      return fullExplicitName;
     }
-
-    const projectId = await this.client.auth.getProjectId();
     const sanitizedName = subscriptionName.replace(/[^a-zA-Z0-9\-_.~]/g, '-');
     const shortName = `${sanitizedName}-deadletter`;
     const fullTopicName = `projects/${projectId}/topics/${shortName}`;
@@ -354,8 +360,7 @@ export class GoogleCloudPubSub implements GCPubSub {
 
   /**
    * Ensures a drain subscription exists on the dead-letter topic so that
-   * GCP does not discard dead-lettered messages. Only called for auto-created
-   * dead-letter topics; user-provided topics are the caller's responsibility.
+   * GCP does not discard dead-lettered messages.
    */
   private async getOrCreateDeadLetterDrainSubscription(dltTopicName: string, drainSubName: string): Promise<void> {
     const drainSub = this.client.topic(dltTopicName).subscription(drainSubName);
