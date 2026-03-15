@@ -341,7 +341,7 @@ export class GoogleCloudPubSub implements GCPubSub {
         ? explicitName
         : `projects/${projectId}/topics/${explicitName}`;
 
-      const shortExplicitName = fullExplicitName.split('/').pop()!;
+      const shortExplicitName = fullExplicitName.split('/').pop() ?? fullExplicitName;
 
       await this.getOrCreateTopic(fullExplicitName);
       await this.getOrCreateDeadLetterDrainSubscription(fullExplicitName, `${shortExplicitName}-sub`);
