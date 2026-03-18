@@ -1,8 +1,6 @@
 import {
   Attributes,
-  CreateSubscriptionResponse,
   ExistsResponse,
-  GetSubscriptionResponse,
   GetTopicOptions,
   GetTopicResponse,
   Message,
@@ -16,6 +14,7 @@ import { pino } from 'pino';
 import { EmitOptions, ListenOptions } from '..';
 import { ExtendedMessage } from './ExtendedMessage';
 import {
+  DeadLetterOptions,
   GCListenOptions,
   GCPubSub,
   GCSubscriptionOptions,
@@ -23,6 +22,8 @@ import {
   SubscriptionMap,
   TopicMap,
 } from './lib';
+
+const defaultMaxDeliveryAttempts = 5;
 
 /**
  * Google PubSub SDK
@@ -92,6 +93,11 @@ export class GoogleCloudPubSub implements GCPubSub {
    */
   private readonly logger: pino.Logger;
 
+  /**
+   * Dead letter policy options applied when creating subscriptions
+   */
+  private readonly deadLetterOptions?: DeadLetterOptions;
+
   constructor(options: GooglePubSubOptions = {}) {
     this.client = new GPubSub(options);
     this.subscriptionsPrefix = options.subscriptionsPrefix;
@@ -102,6 +108,7 @@ export class GoogleCloudPubSub implements GCPubSub {
     this.environment = options.environment;
     this.topics = new Map();
     this.subscriptions = new Map();
+    this.deadLetterOptions = options.deadLetterOptions;
     this.logger = pino({
       level: options.debug === true ? 'debug' : 'silent',
       ...options.pinoOptions,
@@ -287,13 +294,152 @@ export class GoogleCloudPubSub implements GCPubSub {
       throw new Error(`[@algoan/pubsub] The subscription ${subscriptionName} is not found in topic ${topic.name}`);
     }
 
-    const [subscription]: GetSubscriptionResponse | CreateSubscriptionResponse = exists
-      ? await sub.get(options?.get)
-      : await sub.create(options?.create);
+    let subscription: Subscription;
+
+    if (exists) {
+      [subscription] = await sub.get(options?.get);
+    } else if (this.deadLetterOptions === undefined) {
+      [subscription] = await sub.create(options.create);
+    } else {
+      const deadLetterTopicName = await this.resolveDeadLetterTopicName(
+        subscriptionName,
+        subOptions?.deadLetterTopicName,
+      );
+      const deadLetterCreateOptions = this.buildDeadLetterCreateOptions(options.create, deadLetterTopicName);
+      [subscription] = await sub.create(deadLetterCreateOptions);
+
+      if (deadLetterTopicName !== undefined) {
+        await this.setupDeadLetterIamPermissions(subscription, deadLetterTopicName);
+      }
+    }
 
     this.subscriptions.set(subscriptionName, subscription);
 
     return subscription;
+  }
+
+  /**
+   * Resolves the dead-letter topic name for a new subscription using this priority:
+   * 1. Per-subscription override (subOptions.deadLetterTopicName)
+   * 2. Instance-level default (deadLetterOptions.deadLetterTopicName)
+   * 3. Auto-derived: projects/<projectId>/<sanitizedSubscriptionName>-deadletter
+   * (sanitized because subscription separators like '%' are invalid in topic names)
+   * Returns undefined when deadLetterOptions is not configured on the instance.
+   * Explicit names (cases 1 & 2) must be fully-qualified resource names.
+   */
+  private async resolveDeadLetterTopicName(
+    subscriptionName: string,
+    perSubscriptionOverride?: string,
+  ): Promise<string | undefined> {
+    if (this.deadLetterOptions === undefined) {
+      return undefined;
+    }
+
+    const explicitName = perSubscriptionOverride ?? this.deadLetterOptions.deadLetterTopicName;
+    const projectId = await this.client.auth.getProjectId();
+
+    if (explicitName !== undefined) {
+      const fullExplicitName = explicitName.startsWith('projects/')
+        ? explicitName
+        : `projects/${projectId}/topics/${explicitName}`;
+
+      const shortExplicitName = fullExplicitName.split('/').pop() ?? fullExplicitName;
+
+      await this.getOrCreateTopic(fullExplicitName);
+      await this.getOrCreateDeadLetterDrainSubscription(fullExplicitName, `${shortExplicitName}-sub`);
+
+      return fullExplicitName;
+    }
+    const sanitizedName = subscriptionName.replace(/[^a-zA-Z0-9\-_.~]/g, '-');
+    const shortName = `${sanitizedName}-deadletter`;
+    const fullTopicName = `projects/${projectId}/topics/${shortName}`;
+
+    await this.getOrCreateTopic(fullTopicName);
+    await this.getOrCreateDeadLetterDrainSubscription(fullTopicName, `${shortName}-sub`);
+
+    return fullTopicName;
+  }
+
+  /**
+   * Ensures a drain subscription exists on the dead-letter topic so that
+   * GCP does not discard dead-lettered messages.
+   */
+  private async getOrCreateDeadLetterDrainSubscription(dltTopicName: string, drainSubName: string): Promise<void> {
+    const drainSub = this.client.topic(dltTopicName).subscription(drainSubName);
+    const [exists] = await drainSub.exists();
+
+    if (!exists) {
+      await drainSub.create();
+      this.logger.debug({ dltTopicName, drainSubName }, 'Created drain subscription on dead-letter topic');
+    }
+  }
+
+  /**
+   * Merges dead letter policy into CreateSubscriptionOptions if deadLetterOptions is configured
+   */
+  private buildDeadLetterCreateOptions(
+    createOptions?: GCSubscriptionOptions['create'],
+    resolvedDeadLetterTopicName?: string,
+  ): GCSubscriptionOptions['create'] {
+    if (this.deadLetterOptions === undefined || resolvedDeadLetterTopicName === undefined) {
+      return createOptions;
+    }
+
+    return {
+      ...createOptions,
+      deadLetterPolicy: {
+        deadLetterTopic: resolvedDeadLetterTopicName,
+        maxDeliveryAttempts: this.deadLetterOptions.maxDeliveryAttempts ?? defaultMaxDeliveryAttempts,
+      },
+    };
+  }
+
+  /**
+   * Grants the required IAM permissions for dead-letter forwarding.
+   * Pub/Sub service account needs:
+   * - roles/pubsub.publisher on the dead-letter topic
+   * - roles/pubsub.subscriber on the source subscription
+   */
+  private async setupDeadLetterIamPermissions(subscription: Subscription, deadLetterTopicName: string): Promise<void> {
+    const projectId: string = await this.client.auth.getProjectId();
+    const projectNumber = await this.getProjectNumber(projectId);
+    const serviceAccount = `serviceAccount:service-${projectNumber}@gcp-sa-pubsub.iam.gserviceaccount.com`;
+
+    const deadLetterTopic: Topic = this.client.topic(deadLetterTopicName);
+
+    const [topicPolicy] = await deadLetterTopic.iam.getPolicy();
+    const topicBindings = topicPolicy.bindings ?? [];
+    const topicAlreadyBound = topicBindings.some(
+      (b) => b.role === 'roles/pubsub.publisher' && b.members?.includes(serviceAccount),
+    );
+
+    if (!topicAlreadyBound) {
+      const updatedTopicPolicy = {
+        ...topicPolicy,
+        bindings: [...topicBindings, { role: 'roles/pubsub.publisher', members: [serviceAccount] }],
+      };
+      await deadLetterTopic.iam.setPolicy(updatedTopicPolicy);
+    }
+
+    const [subPolicy] = await subscription.iam.getPolicy();
+    const updatedSubPolicy = {
+      ...subPolicy,
+      bindings: [...(subPolicy.bindings ?? []), { role: 'roles/pubsub.subscriber', members: [serviceAccount] }],
+    };
+    await subscription.iam.setPolicy(updatedSubPolicy);
+
+    this.logger.debug({ deadLetterTopicName, serviceAccount }, 'Dead-letter IAM permissions granted');
+  }
+
+  /**
+   * Resolves the numeric GCP project number for a given project ID.
+   * Uses the Cloud Resource Manager REST API v1 where projectNumber is an explicit top-level field.
+   */
+  private async getProjectNumber(projectId: string): Promise<string> {
+    const url = `https://cloudresourcemanager.googleapis.com/v1/projects/${projectId}`;
+    const response = await this.client.auth.request<{ projectNumber: string }>({ url });
+
+    return response.data.projectNumber;
   }
 
   /**

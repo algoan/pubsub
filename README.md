@@ -107,6 +107,7 @@ If the chosen transport is Google Cloud PubSub, then `options` would be:
   - `get`: Options applied to the `getSubscription` method (have a look at [Subscription options](https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#get))
   - `sub`: Options applied to the subscription instance (see also [`setOptions` method](https://googleapis.dev/nodejs/pubsub/latest/Subscription.html#setOptions))
   - `create`: Options applied to the `createSubscription` method (have a look at [Create Subscription options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#createSubscription))
+  - `deadLetterTopicName`: Per-subscription override for the dead-letter topic name (see [Dead Letter Topics](#dead-letter-topics))
 - `topicOptions`: Options applied to the created topic (have a look at [Topic options](https://googleapis.dev/nodejs/pubsub/latest/Topic.html#get))
 - `topicName`: Set the topic name. By default, it uses the default name with a prefix.
 
@@ -131,3 +132,85 @@ If the chosen transport is Google Cloud PubSub, then `options` would be:
 Stop the server connection for a given subscription.
 
 - `event`: Name of of the event to stop listening for.
+
+## Dead Letter Topics
+
+When `deadLetterOptions` is set in the constructor options, the library automatically:
+
+1. Creates the dead-letter topic (if it does not exist)
+2. Creates a drain subscription on the dead-letter topic (to prevent GCP from discarding undelivered messages)
+3. Grants `roles/pubsub.publisher` on the dead-letter topic to the GCP Pub/Sub service account
+4. Grants `roles/pubsub.subscriber` on the source subscription to the GCP Pub/Sub service account
+5. Applies the `deadLetterPolicy` to the created subscription
+
+This setup only happens **once per new subscription** — reconnecting to an already-existing subscription incurs zero overhead.
+
+### Mode 1: Per-subscription isolated dead-letter topics (recommended for multi-consumer systems)
+
+Omit `deadLetterTopicName`. Each subscription automatically gets its own `<subscriptionName>-deadletter` topic, so failed messages from different consumers are isolated and can be replayed independently.
+
+```typescript
+const pubsub: GCPubSub = PubSubFactory.create({
+  transport: Transport.GOOGLE_PUBSUB,
+  options: {
+    projectId: 'my-project',
+    deadLetterOptions: {
+      maxDeliveryAttempts: 10, // optional, defaults to 5
+    },
+  },
+});
+
+// Each listen() call creates its own isolated dead-letter topic:
+// - "my-orders-sub-deadletter" for the first subscription
+// - "my-payments-sub-deadletter" for the second
+await pubsub.listen('my-orders-sub');
+await pubsub.listen('my-payments-sub');
+```
+
+### Mode 2: Shared dead-letter topic (single DLT for all subscriptions)
+
+Provide `deadLetterTopicName` to route all failed messages to one shared topic. The topic must already exist in GCP.
+
+```typescript
+const pubsub: GCPubSub = PubSubFactory.create({
+  transport: Transport.GOOGLE_PUBSUB,
+  options: {
+    projectId: 'my-project',
+    deadLetterOptions: {
+      deadLetterTopicName: 'projects/my-project/topics/my-dead-letter', // fully-qualified or short name
+      maxDeliveryAttempts: 5,
+    },
+  },
+});
+
+await pubsub.listen('my-orders-sub');   // routes to "my-dead-letter"
+await pubsub.listen('my-payments-sub'); // routes to "my-dead-letter"
+```
+
+### Mode 3: Per-subscription override
+
+Override the dead-letter topic for a specific subscription via `subscriptionOptions.deadLetterTopicName`. Falls back to the instance-level `deadLetterTopicName`, then auto-derives if neither is set.
+
+```typescript
+await pubsub.listen('my-special-sub', {
+  options: {
+    subscriptionOptions: {
+      deadLetterTopicName: 'projects/my-project/topics/special-dead-letter',
+    },
+  },
+});
+```
+
+### No dead-letter topic
+
+If `deadLetterOptions` is not set, no dead-letter resources are created and no IAM calls are made — fully backward compatible.
+
+```typescript
+const pubsub: GCPubSub = PubSubFactory.create({
+  transport: Transport.GOOGLE_PUBSUB,
+  options: {
+    projectId: 'my-project',
+    // no deadLetterOptions — existing behavior unchanged
+  },
+});
+```
