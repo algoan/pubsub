@@ -40,7 +40,7 @@
     "@types/sinon": "^17.0.4",
     "@types/uuid": "^10.0.0",
     "ava": "^5.3.1",
-    "commitizen": "^4.2.4",
+    "commitizen": "^4.3.1",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.57.0",
     "google-pubsub-emulator": "^7.1.0",
