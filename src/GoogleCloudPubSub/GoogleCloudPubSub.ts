@@ -410,7 +410,7 @@ export class GoogleCloudPubSub implements GCPubSub {
     const [topicPolicy] = await deadLetterTopic.iam.getPolicy();
     const topicBindings = topicPolicy.bindings ?? [];
     const topicAlreadyBound = topicBindings.some(
-      (b) => b.role === 'roles/pubsub.publisher' && b.members?.includes(serviceAccount),
+      (b) => b.role === 'roles/pubsub.publisher' && (b.members?.includes(serviceAccount) ?? false),
     );
 
     if (!topicAlreadyBound) {
