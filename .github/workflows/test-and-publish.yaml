@@ -28,16 +28,16 @@ jobs:
     strategy:
       matrix:
         version: [
-          { node: "16.x", npm: "8" },
-          { node: "18.x", npm: "10" },
-          { node: "20.x", npm: "10" }
+          { node: "20.x", npm: "10" },
+          { node: "22.x", npm: "10" },
+          { node: "24.x", npm: "10" }
         ]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
     - name: Use Node.js ${{ matrix.version.node }}
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ matrix.version.node }}
         cache: 'npm'
@@ -64,14 +64,14 @@ jobs:
       - test
     if: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
         ref: ${{ inputs.ref }}
     - name: Use Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v6
       with:
-        node-version: '20.x'
+        node-version: '22.x'
         cache: 'npm'
     - run: npm i -g npm
     - run: npm ci
