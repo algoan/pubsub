@@ -298,6 +298,8 @@ export class GoogleCloudPubSub implements GCPubSub {
 
     if (exists) {
       [subscription] = await sub.get(options?.get);
+    } else if (this.deadLetterOptions === undefined) {
+      [subscription] = await sub.create(options.create);
     } else {
       const deadLetterTopicName = await this.resolveDeadLetterTopicName(
         subscriptionName,
