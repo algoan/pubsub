@@ -13,6 +13,7 @@ import { pino } from 'pino';
 
 import { EmitOptions, ListenOptions } from '..';
 import { ExtendedMessage } from './ExtendedMessage';
+import { isAlreadyExistsError } from './grpc-errors';
 import {
   DeadLetterOptions,
   GCListenOptions,
@@ -299,14 +300,14 @@ export class GoogleCloudPubSub implements GCPubSub {
     if (exists) {
       [subscription] = await sub.get(options?.get);
     } else if (this.deadLetterOptions === undefined) {
-      [subscription] = await sub.create(options.create);
+      subscription = await this.createSubscriptionOrGet(sub, options.create, options.get);
     } else {
       const deadLetterTopicName = await this.resolveDeadLetterTopicName(
         subscriptionName,
         subOptions?.deadLetterTopicName,
       );
       const deadLetterCreateOptions = this.buildDeadLetterCreateOptions(options.create, deadLetterTopicName);
-      [subscription] = await sub.create(deadLetterCreateOptions);
+      subscription = await this.createSubscriptionOrGet(sub, deadLetterCreateOptions, options.get);
 
       if (deadLetterTopicName !== undefined) {
         await this.setupDeadLetterIamPermissions(subscription, deadLetterTopicName);
@@ -369,8 +370,39 @@ export class GoogleCloudPubSub implements GCPubSub {
     const [exists] = await drainSub.exists();
 
     if (!exists) {
-      await drainSub.create();
-      this.logger.debug({ dltTopicName, drainSubName }, 'Created drain subscription on dead-letter topic');
+      try {
+        await drainSub.create();
+        this.logger.debug({ dltTopicName, drainSubName }, 'Created drain subscription on dead-letter topic');
+      } catch (error: unknown) {
+        if (!isAlreadyExistsError(error)) {
+          throw error;
+        }
+        this.logger.debug({ dltTopicName, drainSubName }, 'Drain subscription already exists on dead-letter topic');
+      }
+    }
+  }
+
+  /**
+   * Creates a subscription, or retrieves it when another process won a concurrent create race.
+   */
+  private async createSubscriptionOrGet(
+    sub: Subscription,
+    createOptions: GCSubscriptionOptions['create'],
+    getOptions: GCSubscriptionOptions['get'],
+  ): Promise<Subscription> {
+    try {
+      const [createdSubscription] = await sub.create(createOptions);
+
+      return createdSubscription;
+    } catch (error: unknown) {
+      if (!isAlreadyExistsError(error)) {
+        throw error;
+      }
+
+      this.logger.debug({ subscriptionName: sub.name }, 'Subscription already exists, retrieving existing resource');
+      const [existingSubscription] = await sub.get(getOptions);
+
+      return existingSubscription;
     }
   }
 

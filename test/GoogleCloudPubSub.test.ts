@@ -804,3 +804,31 @@ test('GPS014g - should not duplicate IAM bindings when two subscriptions share t
     iamGetPolicyStub.callsFake(() => Promise.resolve([{ bindings: [] }]));
   }
 });
+
+test('GPS015 - should handle concurrent subscription creation without failing on ALREADY_EXISTS', async (t: ExecutionContext): Promise<void> => {
+  const topicName: string = generateRandomTopicName();
+  const pubSubOptions = {
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+    },
+  };
+  const pubSubA: GCPubSub = PubSubFactory.create(pubSubOptions);
+  const pubSubB: GCPubSub = PubSubFactory.create(pubSubOptions);
+
+  await pubSubA.client.createTopic(topicName);
+
+  await Promise.all([
+    pubSubA.listen(topicName, {
+      onMessage: () => {},
+      options: { autoAck: true },
+    }),
+    pubSubB.listen(topicName, {
+      onMessage: () => {},
+      options: { autoAck: true },
+    }),
+  ]);
+
+  const [isSubscriptionExisting] = await pubSubA.client.subscription(topicName).exists();
+  t.true(isSubscriptionExisting, 'subscription should exist after concurrent listen calls');
+});
