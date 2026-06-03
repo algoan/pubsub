@@ -1,7 +1,7 @@
 import { status } from '@grpc/grpc-js';
 
 export const isAlreadyExistsError = (error: unknown): boolean => {
-  if (error == null || typeof error !== 'object') {
+  if (!(error instanceof Object)) {
     return false;
   }
 
