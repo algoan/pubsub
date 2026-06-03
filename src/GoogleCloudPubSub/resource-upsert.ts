@@ -3,7 +3,7 @@ import { GetTopicOptions, Subscription, Topic, PubSub as GPubSub } from '@google
 import { GCSubscriptionOptions } from './lib';
 import { isAlreadyExistsError } from './grpc-errors';
 
-export const getTopicAfterAlreadyExists = async (
+export const createTopicOrGet = async (
   client: GPubSub,
   name: string,
   getTopicOptions?: GetTopicOptions,

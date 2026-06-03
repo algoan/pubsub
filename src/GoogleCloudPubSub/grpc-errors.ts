@@ -1,17 +1,11 @@
-const grpcAlreadyExistsCode = 6;
+import { status } from '@grpc/grpc-js';
 
 export const isAlreadyExistsError = (error: unknown): boolean => {
-  if (error === undefined || typeof error !== 'object') {
+  if (error == null || typeof error !== 'object') {
     return false;
   }
 
-  const grpcError = error as { code?: number; message?: string; details?: string };
+  const grpcError = error as { code?: number };
 
-  if (grpcError.code === grpcAlreadyExistsCode) {
-    return true;
-  }
-
-  const details = `${grpcError.message ?? ''} ${grpcError.details ?? ''}`.toLowerCase();
-
-  return details.includes('already exists');
+  return grpcError.code === status.ALREADY_EXISTS;
 };

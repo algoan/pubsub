@@ -6,15 +6,9 @@ test('isAlreadyExistsError returns true for gRPC code 6', (t) => {
   t.true(isAlreadyExistsError({ code: 6 }));
 });
 
-test('isAlreadyExistsError returns true when message contains already exists', (t) => {
-  t.true(
-    isAlreadyExistsError({
-      message: 'Resource already exists in the project (resource=auth%create_2fa_staging).',
-    }),
-  );
-});
-
 test('isAlreadyExistsError returns false for unrelated errors', (t) => {
   t.false(isAlreadyExistsError({ code: 5, message: 'Not found' }));
   t.false(isAlreadyExistsError(undefined));
+  t.false(isAlreadyExistsError(null));
+  t.false(isAlreadyExistsError({ message: 'Resource already exists in the project' }));
 });

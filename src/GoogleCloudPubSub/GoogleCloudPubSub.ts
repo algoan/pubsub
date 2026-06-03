@@ -12,7 +12,7 @@ import { pino } from 'pino';
 
 import { EmitOptions, ListenOptions } from '..';
 import { ExtendedMessage } from './ExtendedMessage';
-import { createSubscriptionOrGet, getTopicAfterAlreadyExists } from './resource-upsert';
+import { createSubscriptionOrGet, createTopicOrGet } from './resource-upsert';
 import {
   DeadLetterOptions,
   GCListenOptions,
@@ -240,7 +240,7 @@ export class GoogleCloudPubSub implements GCPubSub {
       return cachedTopic;
     }
 
-    const topic = await getTopicAfterAlreadyExists(this.client, name, getTopicOptions);
+    const topic = await createTopicOrGet(this.client, name, getTopicOptions);
 
     if (publishOptions) {
       topic.setPublishOptions(publishOptions);
