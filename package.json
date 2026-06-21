@@ -55,7 +55,7 @@
     "uuid": "^14.0.0"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "^4.11.0",
+    "@google-cloud/pubsub": "^5.3.1",
     "@grpc/grpc-js": "^1.14.4",
     "pino": "^9.7.0"
   },
