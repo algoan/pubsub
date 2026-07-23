@@ -756,6 +756,43 @@ test('GPS014f - should apply maxDeliveryAttempts when configured', async (t: Exe
   }
 });
 
+test('GPS014h - should apply drainSubscriptionOptions to the auto-created dead-letter drain subscription', async (t: ExecutionContext): Promise<void> => {
+  const thirtyOneDaysInSeconds = 2678400;
+  const topicName: string = generateRandomTopicName();
+  const pubsub: GCPubSub = PubSubFactory.create({
+    transport: Transport.GOOGLE_PUBSUB,
+    options: {
+      projectId,
+      deadLetterOptions: {
+        drainSubscriptionOptions: {
+          messageRetentionDuration: { seconds: thirtyOneDaysInSeconds },
+        },
+      },
+    },
+  });
+
+  const authRequestStub = sinon.stub(pubsub.client.auth, 'request').resolves({
+    data: { projectNumber: '123456789' },
+  } as any);
+
+  try {
+    await pubsub.listen(topicName);
+
+    const sanitizedSubName = topicName.replace(/[^a-zA-Z0-9\-_.~]/g, '-');
+    const dltShortName = `${sanitizedSubName}-deadletter`;
+    const drainSub = pubsub.client.subscription(`${dltShortName}-sub`);
+    const [drainMetadata] = await drainSub.getMetadata();
+
+    t.is(
+      Number(drainMetadata.messageRetentionDuration?.seconds),
+      thirtyOneDaysInSeconds,
+      'should apply the configured messageRetentionDuration to the drain subscription',
+    );
+  } finally {
+    authRequestStub.restore();
+  }
+});
+
 test('GPS014g - should not duplicate IAM bindings when two subscriptions share the same dead-letter topic', async (t: ExecutionContext): Promise<void> => {
   const topicName1: string = generateRandomTopicName();
   const topicName2: string = generateRandomTopicName();

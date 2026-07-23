@@ -201,6 +201,28 @@ await pubsub.listen('my-special-sub', {
 });
 ```
 
+### Configuring the drain subscription (e.g. message retention)
+
+By default the drain subscription created on the dead-letter topic uses Google Cloud defaults — notably a **7-day** message retention. Provide `drainSubscriptionOptions` to override the `CreateSubscriptionOptions` used when the drain subscription is created (for example, to keep dead-lettered messages for the maximum of 31 days so there is more time to inspect and replay them).
+
+```typescript
+const pubsub: GCPubSub = PubSubFactory.create({
+  transport: Transport.GOOGLE_PUBSUB,
+  options: {
+    projectId: 'my-project',
+    deadLetterOptions: {
+      drainSubscriptionOptions: {
+        messageRetentionDuration: { seconds: 2678400 }, // 31 days (max)
+      },
+    },
+  },
+});
+
+await pubsub.listen('my-orders-sub');
+```
+
+Like the rest of the dead-letter setup, this is only applied when the drain subscription is **created** — an already-existing drain subscription is left untouched.
+
 ### No dead-letter topic
 
 If `deadLetterOptions` is not set, no dead-letter resources are created and no IAM calls are made — fully backward compatible.

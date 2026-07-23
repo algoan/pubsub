@@ -26,6 +26,14 @@ export interface DeadLetterOptions {
   deadLetterTopicName?: string;
   /** Maximum number of delivery attempts before forwarding to dead-letter topic (min: 5, max: 100) */
   maxDeliveryAttempts?: number;
+  /**
+   * Options applied when auto-creating the drain subscription on the dead-letter topic
+   * (e.g. `messageRetentionDuration`, `expirationPolicy`, `filter`).
+   * When omitted, the drain subscription is created with Google Cloud defaults
+   * (notably a 7-day message retention). Only applied at creation time — an
+   * already-existing drain subscription is left untouched.
+   */
+  drainSubscriptionOptions?: CreateSubscriptionOptions;
 }
 
 /**
