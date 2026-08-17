@@ -74,7 +74,7 @@ jobs:
         node-version: '26.x'
         cache: 'npm'
     - run: npm i -g npm
-    - run: npm ci
+    - run: npm ci --allow-git=root
     - run: npm run compile
     - run: npm run semantic-release
       name: Run Semantic Release
