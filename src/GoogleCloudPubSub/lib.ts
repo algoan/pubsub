@@ -9,7 +9,7 @@ import {
 } from '@google-cloud/pubsub';
 import { ClientConfig } from '@google-cloud/pubsub/build/src/pubsub';
 import { MessageOptions, PublishOptions } from '@google-cloud/pubsub/build/src/topic';
-import { pino } from 'pino';
+import type { LoggerOptions } from 'pino';
 
 import { PubSub } from '..';
 
@@ -47,7 +47,7 @@ export interface GooglePubSubOptions extends ClientConfig {
   namespace?: string;
   environment?: string;
   debug?: boolean;
-  pinoOptions?: pino.LoggerOptions;
+  pinoOptions?: LoggerOptions;
   /** Dead letter policy applied when creating new subscriptions */
   deadLetterOptions?: DeadLetterOptions;
 }

@@ -8,7 +8,7 @@ import {
   Topic,
   PublishOptions,
 } from '@google-cloud/pubsub';
-import { pino } from 'pino';
+import { pino, Logger } from 'pino';
 
 import { EmitOptions, ListenOptions } from '..';
 import { ExtendedMessage } from './ExtendedMessage';
@@ -91,7 +91,7 @@ export class GoogleCloudPubSub implements GCPubSub {
   /**
    * Logger
    */
-  private readonly logger: pino.Logger;
+  private readonly logger: Logger;
 
   /**
    * Dead letter policy options applied when creating subscriptions
