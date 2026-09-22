@@ -29,11 +29,13 @@ export class ExtendedMessage<T> implements EmittedMessage<T> {
   /** GoogleCloud ack method, is defined if autoAck is disable */
   private readonly originalMessage: Message;
 
+  /**
+   * @param message Google PubSub message
+   */
   constructor(message: Message) {
     this.id = message.id;
     try {
-      // eslint-disable-next-line @typescript-eslint/tslint/config
-      this.payload = JSON.parse(message.data.toString());
+      this.payload = JSON.parse(message.data.toString()) as T;
     } catch (err) {
       this.payload = {
         code: 'JSON_PARSE_ERROR_MESSAGE',

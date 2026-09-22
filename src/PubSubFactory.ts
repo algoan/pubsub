@@ -3,7 +3,7 @@ import { GCPubSub, GoogleCloudPubSub, GooglePubSubOptions } from './GoogleCloudP
 /**
  * PubSub factory class
  */
-// tslint:disable-next-line: no-unnecessary-class
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- static factory, kept as a class for backward compatibility
 export class PubSubFactory {
   /**
    * Create a pubsub instance depending of the transport
@@ -18,6 +18,7 @@ export class PubSubFactory {
  * Transport to use
  */
 export enum Transport {
+  // eslint-disable-next-line @typescript-eslint/naming-convention -- public API value, kept as-is for backward compatibility
   GOOGLE_PUBSUB = 'GOOGLE_PUBSUB',
 }
 

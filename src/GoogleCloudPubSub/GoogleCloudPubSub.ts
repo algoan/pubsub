@@ -98,6 +98,9 @@ export class GoogleCloudPubSub implements GCPubSub {
    */
   private readonly deadLetterOptions?: DeadLetterOptions;
 
+  /**
+   * @param options Google PubSub options
+   */
   constructor(options: GooglePubSubOptions = {}) {
     this.client = new GPubSub(options);
     this.subscriptionsPrefix = options.subscriptionsPrefix;
