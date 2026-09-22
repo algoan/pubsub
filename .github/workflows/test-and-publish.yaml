@@ -55,9 +55,15 @@ jobs:
 
   publish:
     permissions:
+      # Push the release commit and tag, and create the GitHub Release
       contents: write
+      # semantic-release comments on released issues and pull requests
+      issues: write
       pull-requests: write
+      # Publish to GitHub Packages
       packages: write
+      # Mint the OIDC token used to publish to npmjs.com without a long-lived token
+      id-token: write
     runs-on: ubuntu-latest
     name: Publish @algoan/pubsub to NPM
     needs:
@@ -74,13 +80,14 @@ jobs:
         node-version: '26.x'
         cache: 'npm'
     - run: npm i -g npm
-    - run: npm ci --allow-git=root
+    - run: npm ci
     - run: npm run compile
     - run: npm run semantic-release
       name: Run Semantic Release
       env:
-        GITHUB_TOKEN: ${{ secrets.GH_PAT_SEMANTIC_RELEASE }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB_NPM_CONFIG_REGISTRY: https://npm.pkg.github.com/
         GITHUB_NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # No NPM_NPM_TOKEN: npmjs.com authentication goes through OIDC trusted
+        # publishing, configured on the package settings at npmjs.com.
         NPM_NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
-        NPM_NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
