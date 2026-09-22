@@ -15,6 +15,11 @@ on:
         required: false
         type: string
         default: master
+      npm_loglevel:
+        description: 'npm loglevel for the release step. Set to "verbose" to surface why OIDC trusted publishing was skipped: npm logs that reason below notice level.'
+        required: false
+        type: string
+        default: notice
 
 
 jobs:
@@ -91,3 +96,4 @@ jobs:
         # No NPM_NPM_TOKEN: npmjs.com authentication goes through OIDC trusted
         # publishing, configured on the package settings at npmjs.com.
         NPM_NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+        NPM_CONFIG_LOGLEVEL: ${{ inputs.npm_loglevel || 'notice' }}
