@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 /* eslint-disable prefer-arrow/prefer-arrow-functions */
 /* eslint-disable no-void */
-import test, { ExecutionContext } from 'ava';
+import test, { ExecutionContext, registerCompletionHandler } from 'ava';
 import * as sinon from 'sinon';
 import { IAM } from '@google-cloud/pubsub/build/src/iam';
 
@@ -19,6 +19,13 @@ let iamGetPolicyStub: sinon.SinonStub;
 let iamSetPolicyStub: sinon.SinonStub;
 
 let emulator: any;
+
+// The @google-cloud/pubsub clients created across these tests keep gRPC channels open,
+// which prevents the worker thread from exiting naturally once ava has finished
+// reporting results. See https://github.com/avajs/ava/blob/main/docs/08-common-pitfalls.md
+registerCompletionHandler(() => {
+  process.exit();
+});
 
 test.before(async () => {
   emulator = new Emulator({
