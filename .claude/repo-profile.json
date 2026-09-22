@@ -1,0 +1,4 @@
+{
+  "upstream": "algoan/pubsub",
+  "baseBranch": "master"
+}
