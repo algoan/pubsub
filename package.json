@@ -71,8 +71,7 @@
       },
       "compile": false
     },
-    "failFast": true,
-    "timeout": "60s"
+    "failFast": true
   },
   "overrides": {
     "@typescript-eslint/typescript-estree": {
