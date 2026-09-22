@@ -47,6 +47,5 @@ export interface Metadata {
  * Check if a message is in an error state
  * @param payload
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/tslint/config
 export const isPayloadError = <T extends object>(payload: T | ErrorPayload): payload is ErrorPayload =>
   'code' in payload && 'err' in payload;

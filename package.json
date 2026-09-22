@@ -11,7 +11,7 @@
     "commit": "git-cz",
     "pretest": "npm run compile && npm run lint",
     "prettier": "prettier --write '{src,test,examples}/**/*.{js,ts}'",
-    "lint": "eslint ./src/**/*.ts",
+    "lint": "eslint src",
     "test": "ava --color --verbose",
     "cover": "nyc --reporter=html --reporter=lcov npm test",
     "semantic-release": "semantic-release"
@@ -31,7 +31,7 @@
   "author": "algoan",
   "license": "ISC",
   "devDependencies": {
-    "@algoan/eslint-config": "^2.2.2",
+    "@algoan/eslint-config": "^3.0.0",
     "@amanda-mitchell/semantic-release-npm-multiple": "^3.17.0",
     "@ava/typescript": "^4.1.0",
     "@commitlint/cli": "^19.8.1",
@@ -41,7 +41,7 @@
     "ava": "^5.3.1",
     "commitizen": "^4.3.2",
     "cz-conventional-changelog": "^3.3.0",
-    "eslint": "^8.57.1",
+    "eslint": "^10.11.0",
     "google-pubsub-emulator": "^7.1.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
@@ -59,7 +59,7 @@
     "pino": "^9.14.0"
   },
   "engines": {
-    "node": ">= 12"
+    "node": "^20.19.0 || ^22.13.0 || >=24"
   },
   "ava": {
     "files": [

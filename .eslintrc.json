@@ -1,6 +1,0 @@
-{
-  "extends": "@algoan/eslint-config",
-  "rules": {
-    "@typescript-eslint/ban-types": "off"
-  }
-}
