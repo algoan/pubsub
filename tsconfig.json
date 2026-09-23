@@ -24,7 +24,8 @@
       "noFallthroughCasesInSwitch": true,
   
       "moduleResolution": "node",
-      "allowSyntheticDefaultImports": false,
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
   
       "inlineSourceMap": false,
   
