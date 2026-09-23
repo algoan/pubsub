@@ -55,12 +55,12 @@
     "uuid": "^14.0.2"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "^4.11.0",
+    "@google-cloud/pubsub": "^6.1.0",
     "@grpc/grpc-js": "^1.14.4",
     "pino": "^10.3.1"
   },
   "engines": {
-    "node": "^20.19.0 || ^22.13.0 || >=24"
+    "node": "^22.13.0 || >=24"
   },
   "ava": {
     "files": [
@@ -77,6 +77,9 @@
   "overrides": {
     "@typescript-eslint/typescript-estree": {
       "minimatch": "^9.0.7"
+    },
+    "google-pubsub-emulator": {
+      "@google-cloud/pubsub": "$@google-cloud/pubsub"
     },
     "gaxios": {
       "uuid": "^11.1.1"
