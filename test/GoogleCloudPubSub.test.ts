@@ -1,6 +1,7 @@
 /* eslint-disable max-lines */
 /* eslint-disable prefer-arrow/prefer-arrow-functions */
 /* eslint-disable no-void */
+import * as path from 'path';
 import test, { ExecutionContext, registerCompletionHandler } from 'ava';
 import * as sinon from 'sinon';
 import { IAM } from '@google-cloud/pubsub/build/src/iam';
@@ -14,6 +15,15 @@ import { TestUtils } from './utils/test-utils';
 const Emulator = require('google-pubsub-emulator');
 
 const projectId: string = 'algoan-test';
+
+/**
+ * Points the client library at throwaway, locally-generated credentials instead of
+ * letting it fall back to Application Default Credentials. Without this, every
+ * PubSub client created in these tests probes the GCE metadata server (unreachable
+ * in CI/sandboxed environments) before falling back, adding ~3s per client and
+ * making the suite flaky under load. See https://github.com/algoan/pubsub/pull/773
+ */
+process.env.GOOGLE_APPLICATION_CREDENTIALS = path.join(process.cwd(), 'test', 'fixtures', 'fake-service-account.json');
 let ackSpy: sinon.SinonSpy;
 let iamGetPolicyStub: sinon.SinonStub;
 let iamSetPolicyStub: sinon.SinonStub;
