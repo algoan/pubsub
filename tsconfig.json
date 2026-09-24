@@ -23,6 +23,8 @@
       "noImplicitReturns": true,
       "noFallthroughCasesInSwitch": true,
   
+      "skipLibCheck": true,
+  
       "moduleResolution": "node",
       "esModuleInterop": true,
       "allowSyntheticDefaultImports": true,
