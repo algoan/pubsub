@@ -90,6 +90,9 @@
     "teeny-request": {
       "uuid": "^11.1.1"
     },
+    "js-yaml@3": {
+      "argparse": "^2.0.1"
+    },
     "@amanda-mitchell/semantic-release-npm-multiple": {
       "semantic-release": "$semantic-release"
     }
