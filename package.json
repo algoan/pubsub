@@ -39,7 +39,7 @@
     "@semantic-release/git": "^11.0.1",
     "@types/node": "^26.6.5",
     "@types/sinon": "^22.0.0",
-    "ava": "^8.0.1",
+    "ava": "^8.0.2",
     "commitizen": "^4.3.2",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^10.12.0",
