@@ -15,3 +15,18 @@ export const isAlreadyExistsError = (error: unknown): boolean => {
 
   return grpcError.code === status.ALREADY_EXISTS;
 };
+
+/**
+ * Returns true if the given error is a gRPC ABORTED error (status code 10).
+ * Returned by IAM setPolicy when a concurrent write changed the policy first.
+ * @param error - The error to inspect
+ */
+export const isAbortedError = (error: unknown): boolean => {
+  if (!(error instanceof Object)) {
+    return false;
+  }
+
+  const grpcError = error as { code?: number };
+
+  return grpcError.code === status.ABORTED;
+};
