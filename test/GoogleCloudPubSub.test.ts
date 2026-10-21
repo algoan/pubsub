@@ -568,6 +568,37 @@ test('GPS013 - should throw an error because the subscription is not created', a
   }
 });
 
+const pubsubServiceAccount = 'serviceAccount:service-123456789@gcp-sa-pubsub.iam.gserviceaccount.com';
+
+/**
+ * The role each setPolicy call appended, in call order. grantIamRole appends its binding
+ * last, so the tail of the bindings array identifies what that write was granting.
+ */
+function grantedRoles(stub: sinon.SinonStub): string[] {
+  return stub.getCalls().map((call) => {
+    const bindings = call.args[0]?.bindings as Array<{ role: string }> | undefined;
+
+    return bindings?.[bindings.length - 1]?.role ?? '';
+  });
+}
+
+/**
+ * The error Pub/Sub returns when two callers update the same IAM policy at once.
+ */
+function abortedError(): Error {
+  return Object.assign(new Error('There were concurrent policy changes.'), { code: 10 });
+}
+
+/**
+ * Restores the default IAM stub behaviour shared by the rest of the suite.
+ */
+function resetIamStubBehaviour(): void {
+  iamGetPolicyStub.resetBehavior();
+  iamGetPolicyStub.resolves([{ bindings: [] }]);
+  iamSetPolicyStub.resetBehavior();
+  iamSetPolicyStub.resolves([{}]);
+}
+
 // Dead-letter tests share the IAM.prototype stubs and assert on their call counts, so they must not interleave.
 test.serial(
   'GPS014a - should auto-create a per-subscription dead-letter topic named <subscriptionName>-deadletter',
@@ -609,17 +640,150 @@ test.serial(
 
       const bindings = iamSetFirstCallArgs?.[0]?.bindings as Array<{ role: string; members: string[] }>;
       t.true(
-        bindings?.some(
-          (b) =>
-            b.role === 'roles/pubsub.publisher' &&
-            b.members.includes('serviceAccount:service-123456789@gcp-sa-pubsub.iam.gserviceaccount.com'),
-        ),
+        bindings?.some((b) => b.role === 'roles/pubsub.subscriber' && b.members.includes(pubsubServiceAccount)),
+        'should grant subscriber role on the subscription before touching the shared dead-letter topic',
+      );
+      t.true(
+        grantedRoles(iamSetPolicyStub).includes('roles/pubsub.publisher'),
         'should grant publisher role on dead-letter topic to Pub/Sub service account',
       );
     } finally {
       authRequestStub.restore();
       iamGetPolicyStub.resetHistory();
       iamSetPolicyStub.resetHistory();
+    }
+  },
+);
+
+test.serial(
+  'GPS014i - should grant the subscriber role even when the dead-letter topic policy write keeps aborting',
+  async (t: ExecutionContext): Promise<void> => {
+    const topicName: string = generateRandomTopicName();
+    const pubsub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: {
+        projectId,
+        deadLetterOptions: {},
+      },
+    });
+
+    const authRequestStub = sinon.stub(pubsub.client.auth, 'request').resolves({
+      data: { projectNumber: '123456789' },
+    } as any);
+
+    // A dead-letter topic shared by several subscriptions is written to concurrently, so every
+    // caller but one is aborted. Before the subscription grant was moved first, that abort threw
+    // and took the subscriber role with it, leaving dead-lettering silently broken.
+    iamSetPolicyStub.callsFake(async (policy: any) => {
+      const bindings = policy?.bindings as Array<{ role: string }> | undefined;
+
+      if (bindings?.[bindings.length - 1]?.role === 'roles/pubsub.publisher') {
+        throw abortedError();
+      }
+
+      return [{}];
+    });
+
+    try {
+      await t.throwsAsync(pubsub.listen(topicName), undefined, 'an unrecoverable abort still surfaces');
+
+      const roles = grantedRoles(iamSetPolicyStub);
+
+      t.is(roles[0], 'roles/pubsub.subscriber', 'subscriber role is granted before the contended topic write');
+      t.true(
+        roles.filter((role) => role === 'roles/pubsub.publisher').length > 1,
+        'an aborted topic policy write is retried rather than failing on the first attempt',
+      );
+    } finally {
+      authRequestStub.restore();
+      resetIamStubBehaviour();
+    }
+  },
+);
+
+test.serial(
+  'GPS014j - should retry an aborted dead-letter topic policy write and succeed',
+  async (t: ExecutionContext): Promise<void> => {
+    const topicName: string = generateRandomTopicName();
+    const pubsub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: {
+        projectId,
+        deadLetterOptions: {},
+      },
+    });
+
+    const authRequestStub = sinon.stub(pubsub.client.auth, 'request').resolves({
+      data: { projectNumber: '123456789' },
+    } as any);
+
+    let publisherAttempts = 0;
+    iamSetPolicyStub.callsFake(async (policy: any) => {
+      const bindings = policy?.bindings as Array<{ role: string }> | undefined;
+
+      if (bindings?.[bindings.length - 1]?.role === 'roles/pubsub.publisher') {
+        publisherAttempts++;
+
+        if (publisherAttempts === 1) {
+          throw abortedError();
+        }
+      }
+
+      return [{}];
+    });
+
+    try {
+      await t.notThrowsAsync(pubsub.listen(topicName), 'a retried abort is not fatal');
+
+      t.is(publisherAttempts, 2, 'the aborted write is retried exactly once more');
+      t.deepEqual(
+        grantedRoles(iamSetPolicyStub),
+        ['roles/pubsub.subscriber', 'roles/pubsub.publisher', 'roles/pubsub.publisher'],
+        'subscriber first, then the topic write and its retry',
+      );
+    } finally {
+      authRequestStub.restore();
+      resetIamStubBehaviour();
+    }
+  },
+);
+
+test.serial(
+  'GPS014k - should not write a policy when both dead-letter bindings already exist',
+  async (t: ExecutionContext): Promise<void> => {
+    const topicName: string = generateRandomTopicName();
+    const pubsub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: {
+        projectId,
+        deadLetterOptions: {},
+      },
+    });
+
+    const authRequestStub = sinon.stub(pubsub.client.auth, 'request').resolves({
+      data: { projectNumber: '123456789' },
+    } as any);
+
+    // Re-reading the policy on every attempt is what makes concurrent callers converge: once one
+    // of them has added the binding, the rest find it and stop instead of contending again.
+    iamGetPolicyStub.resetBehavior();
+    iamGetPolicyStub.resolves([
+      {
+        bindings: [
+          { role: 'roles/pubsub.publisher', members: [pubsubServiceAccount] },
+          { role: 'roles/pubsub.subscriber', members: [pubsubServiceAccount] },
+        ],
+      },
+    ]);
+
+    try {
+      await pubsub.listen(topicName);
+
+      t.true(iamGetPolicyStub.called, 'the policy is still read');
+      t.true(iamSetPolicyStub.notCalled, 'no policy is written when both bindings are already present');
+    } finally {
+      authRequestStub.restore();
+      resetIamStubBehaviour();
     }
   },
 );

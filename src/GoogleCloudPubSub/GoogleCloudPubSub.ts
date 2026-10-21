@@ -12,6 +12,7 @@ import { pino, Logger } from 'pino';
 
 import { EmitOptions, ListenOptions } from '..';
 import { ExtendedMessage } from './ExtendedMessage';
+import { grantIamRole } from './iam-bindings';
 import { createSubscriptionOrGet, createTopicOrGet } from './resource-upsert';
 import {
   DeadLetterOptions,
@@ -409,26 +410,10 @@ export class GoogleCloudPubSub implements GCPubSub {
 
     const deadLetterTopic: Topic = this.client.topic(deadLetterTopicName);
 
-    const [topicPolicy] = await deadLetterTopic.iam.getPolicy();
-    const topicBindings = topicPolicy.bindings ?? [];
-    const topicAlreadyBound = topicBindings.some(
-      (b) => b.role === 'roles/pubsub.publisher' && (b.members?.includes(serviceAccount) ?? false),
-    );
-
-    if (!topicAlreadyBound) {
-      const updatedTopicPolicy = {
-        ...topicPolicy,
-        bindings: [...topicBindings, { role: 'roles/pubsub.publisher', members: [serviceAccount] }],
-      };
-      await deadLetterTopic.iam.setPolicy(updatedTopicPolicy);
-    }
-
-    const [subPolicy] = await subscription.iam.getPolicy();
-    const updatedSubPolicy = {
-      ...subPolicy,
-      bindings: [...(subPolicy.bindings ?? []), { role: 'roles/pubsub.subscriber', members: [serviceAccount] }],
-    };
-    await subscription.iam.setPolicy(updatedSubPolicy);
+    // Granted first: the subscription policy has a single writer, so it cannot be lost to a
+    // failed write on the dead-letter topic, which several subscriptions may share.
+    await grantIamRole(subscription.iam, 'roles/pubsub.subscriber', serviceAccount);
+    await grantIamRole(deadLetterTopic.iam, 'roles/pubsub.publisher', serviceAccount);
 
     this.logger.debug({ deadLetterTopicName, serviceAccount }, 'Dead-letter IAM permissions granted');
   }
