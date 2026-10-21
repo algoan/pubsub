@@ -126,9 +126,11 @@ export class TestUtils {
   private validateEmittedMessageProperties(message: EmittedMessage<OnMessage>, payload: OnMessage) {
     const { avaExecCtx } = this;
     avaExecCtx.deepEqual(payload, { hello: 'world' });
-    ['id', 'ackId', 'emittedAt', 'receivedAt', 'duration'].forEach((property) => {
+    ['id', 'ackId', 'emittedAt', 'receivedAt'].forEach((property) => {
       avaExecCtx.truthy(message[property as keyof EmittedMessage<OnMessage>]);
     });
+    // Emission and reception can fall within the same millisecond on the emulator
+    avaExecCtx.true(message.duration >= 0);
   }
 
   /**
