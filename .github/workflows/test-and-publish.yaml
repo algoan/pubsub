@@ -79,8 +79,8 @@ jobs:
       with:
         fetch-depth: 0
         ref: ${{ inputs.ref }}
-        # @semantic-release/git pushes the release commit with these credentials: the bot bypasses the master branch ruleset, github-actions does not
-        token: ${{ secrets.PUBLIC_REPO_GHA_PAT }}
+        # No git credentials during npm ci and the build: the bot token is only set for the semantic-release push
+        persist-credentials: false
     - name: Use Node.js
       uses: actions/setup-node@v6
       with:
@@ -89,6 +89,14 @@ jobs:
     - run: npm i -g npm
     - run: npm ci
     - run: npm run compile
+    # semantic-release pushes the release commit and tag with the git credentials it finds: the bot bypasses the master branch ruleset, github-actions does not
+    - name: Set the bot credentials for the release push
+      run: |
+        basic=$(printf 'x-access-token:%s' "$BOT_TOKEN" | base64 -w0)
+        echo "::add-mask::$basic"
+        git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $basic"
+      env:
+        BOT_TOKEN: ${{ secrets.PUBLIC_REPO_GHA_PAT }}
     - run: npm run semantic-release
       name: Run Semantic Release
       env:
@@ -99,3 +107,6 @@ jobs:
         # publishing, configured on the package settings at npmjs.com.
         NPM_NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
         NPM_CONFIG_LOGLEVEL: ${{ inputs.npm_loglevel || 'notice' }}
+    - name: Remove the bot credentials
+      if: always()
+      run: git config --local --unset-all http.https://github.com/.extraheader || true
