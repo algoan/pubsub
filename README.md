@@ -203,7 +203,7 @@ await pubsub.listen('my-special-sub', {
 
 ### Configuring the drain subscription (e.g. message retention)
 
-By default the drain subscription created on the dead-letter topic uses Google Cloud defaults — notably a **7-day** message retention. Provide `drainSubscriptionOptions` to override the `CreateSubscriptionOptions` used when the drain subscription is created (for example, to keep dead-lettered messages for the maximum of 31 days so there is more time to inspect and replay them).
+By default the drain subscription created on the dead-letter topic never expires (nothing pulls from it, so Google Cloud's default 31-day inactivity expiration would otherwise delete it) and uses Google Cloud defaults for everything else — notably a **7-day** message retention. Provide `drainSubscriptionOptions` to override the `CreateSubscriptionOptions` used when the drain subscription is created (for example, to keep dead-lettered messages for the maximum of 31 days so there is more time to inspect and replay them).
 
 ```typescript
 const pubsub: GCPubSub = PubSubFactory.create({

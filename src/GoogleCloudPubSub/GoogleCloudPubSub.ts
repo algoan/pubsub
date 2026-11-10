@@ -301,6 +301,7 @@ export class GoogleCloudPubSub implements GCPubSub {
 
     if (exists) {
       [subscription] = await sub.get(options?.get);
+      await this.reconcileExistingDeadLetterDrainSubscription(subscription);
     } else if (this.deadLetterOptions === undefined) {
       subscription = await createSubscriptionOrGet(sub, options.create, options.get);
     } else {
@@ -372,8 +373,51 @@ export class GoogleCloudPubSub implements GCPubSub {
     const [exists] = await drainSub.exists();
 
     if (!exists) {
-      await createSubscriptionOrGet(drainSub, this.deadLetterOptions?.drainSubscriptionOptions, { autoCreate: false });
+      await createSubscriptionOrGet(
+        drainSub,
+        { expirationPolicy: {}, ...this.deadLetterOptions?.drainSubscriptionOptions },
+        { autoCreate: false },
+      );
       this.logger.debug({ dltTopicName, drainSubName }, 'Created drain subscription on dead-letter topic');
+    }
+  }
+
+  /**
+   * Ensures the dead-letter topic of an already-existing subscription has a drain subscription.
+   */
+  private async reconcileExistingDeadLetterDrainSubscription(subscription: Subscription): Promise<void> {
+    if (this.deadLetterOptions === undefined) {
+      return;
+    }
+
+    const deadLetterTopicName = subscription.metadata?.deadLetterPolicy?.deadLetterTopic;
+
+    if (typeof deadLetterTopicName !== 'string' || deadLetterTopicName === '') {
+      return;
+    }
+
+    const shortName = deadLetterTopicName.split('/').pop() ?? deadLetterTopicName;
+    const drainSubName = `${shortName}-sub`;
+
+    try {
+      const drainSub = this.client.subscription(drainSubName);
+      const [drainExists] = await drainSub.exists();
+      const drainTopic = drainExists ? (await drainSub.getMetadata())[0].topic : undefined;
+
+      if (drainExists && drainTopic !== deadLetterTopicName) {
+        throw new Error(
+          `[@algoan/pubsub] The subscription ${drainSubName} is attached to ${drainTopic}, not to the dead-letter topic ${deadLetterTopicName}`,
+        );
+      }
+
+      if (!drainExists) {
+        await this.getOrCreateDeadLetterDrainSubscription(deadLetterTopicName, drainSubName);
+      }
+    } catch (error: unknown) {
+      this.logger.warn(
+        { err: error, subscriptionName: subscription.name, deadLetterTopicName },
+        'Unable to ensure a drain subscription on the dead-letter topic of an existing subscription',
+      );
     }
   }
 
