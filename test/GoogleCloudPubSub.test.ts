@@ -883,6 +883,47 @@ test.serial(
 );
 
 test.serial(
+  'GPS014o - should create the drain subscription without an expiration unless drainSubscriptionOptions overrides it',
+  async (t: ExecutionContext): Promise<void> => {
+    const defaultTopic: string = generateRandomTopicName();
+    const overrideTopic: string = generateRandomTopicName();
+    const sevenDays = { seconds: 604800 };
+    const defaultPubSub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: { projectId, deadLetterOptions: {} },
+    });
+    const overridePubSub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: {
+        projectId,
+        deadLetterOptions: { drainSubscriptionOptions: { expirationPolicy: { ttl: sevenDays } } },
+      },
+    });
+
+    const createSpy = sinon.spy(Subscription.prototype, 'create');
+    const authRequestStubs = [defaultPubSub, overridePubSub].map((pubsub) =>
+      sinon.stub(pubsub.client.auth, 'request').resolves({ data: { projectNumber: '123456789' } } as any),
+    );
+
+    try {
+      await defaultPubSub.listen(defaultTopic);
+      await overridePubSub.listen(overrideTopic);
+
+      const drainCreateOptions = (topicName: string): any =>
+        createSpy
+          .getCalls()
+          .find((call) => (call.thisValue as Subscription).name.endsWith(`${topicName}-deadletter-sub`))?.args[0];
+
+      t.deepEqual(drainCreateOptions(defaultTopic)?.expirationPolicy, {});
+      t.deepEqual(drainCreateOptions(overrideTopic)?.expirationPolicy, { ttl: sevenDays });
+    } finally {
+      createSpy.restore();
+      authRequestStubs.forEach((stub) => stub.restore());
+    }
+  },
+);
+
+test.serial(
   'GPS014m - should not create dead-letter resources for an existing subscription without a dead-letter policy',
   async (t: ExecutionContext): Promise<void> => {
     const topicName: string = generateRandomTopicName();

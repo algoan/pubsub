@@ -373,7 +373,11 @@ export class GoogleCloudPubSub implements GCPubSub {
     const [exists] = await drainSub.exists();
 
     if (!exists) {
-      await createSubscriptionOrGet(drainSub, this.deadLetterOptions?.drainSubscriptionOptions, { autoCreate: false });
+      await createSubscriptionOrGet(
+        drainSub,
+        { expirationPolicy: {}, ...this.deadLetterOptions?.drainSubscriptionOptions },
+        { autoCreate: false },
+      );
       this.logger.debug({ dltTopicName, drainSubName }, 'Created drain subscription on dead-letter topic');
     }
   }
