@@ -397,9 +397,22 @@ export class GoogleCloudPubSub implements GCPubSub {
     }
 
     const shortName = deadLetterTopicName.split('/').pop() ?? deadLetterTopicName;
+    const drainSubName = `${shortName}-sub`;
 
     try {
-      await this.getOrCreateDeadLetterDrainSubscription(deadLetterTopicName, `${shortName}-sub`);
+      const drainSub = this.client.subscription(drainSubName);
+      const [drainExists] = await drainSub.exists();
+      const drainTopic = drainExists ? (await drainSub.getMetadata())[0].topic : undefined;
+
+      if (drainExists && drainTopic !== deadLetterTopicName) {
+        throw new Error(
+          `[@algoan/pubsub] The subscription ${drainSubName} is attached to ${drainTopic}, not to the dead-letter topic ${deadLetterTopicName}`,
+        );
+      }
+
+      if (!drainExists) {
+        await this.getOrCreateDeadLetterDrainSubscription(deadLetterTopicName, drainSubName);
+      }
     } catch (error: unknown) {
       this.logger.warn(
         { err: error, subscriptionName: subscription.name, deadLetterTopicName },

@@ -924,6 +924,46 @@ test.serial(
 );
 
 test.serial(
+  'GPS014p - should warn instead of accepting a same-named subscription attached to another topic as the drain',
+  async (t: ExecutionContext): Promise<void> => {
+    const topicName: string = generateRandomTopicName();
+    const dltName: string = generateRandomTopicName();
+    const otherTopicName: string = generateRandomTopicName();
+    const pubsub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: {
+        projectId,
+        deadLetterOptions: {},
+      },
+    });
+
+    const [topic] = await pubsub.client.createTopic(topicName);
+    await pubsub.client.createTopic(dltName);
+    const [otherTopic] = await pubsub.client.createTopic(otherTopicName);
+    await otherTopic.createSubscription(`${dltName}-sub`);
+    await topic.createSubscription(topicName, {
+      deadLetterPolicy: { deadLetterTopic: `projects/${projectId}/topics/${dltName}` },
+    });
+
+    const warnStub = sinon.stub((pubsub as any).logger, 'warn');
+
+    try {
+      await t.notThrowsAsync(pubsub.listen(topicName));
+
+      const [drainSubs] = await pubsub.client.topic(dltName).getSubscriptions();
+      const [collidingMetadata] = await pubsub.client.subscription(`${dltName}-sub`).getMetadata();
+
+      t.true(warnStub.calledOnce, 'the collision should be reported');
+      t.regex(String(warnStub.firstCall.args[0]?.err?.message), /is attached to/);
+      t.is(drainSubs.length, 0);
+      t.is(collidingMetadata.topic, `projects/${projectId}/topics/${otherTopicName}`);
+    } finally {
+      warnStub.restore();
+    }
+  },
+);
+
+test.serial(
   'GPS014m - should not create dead-letter resources for an existing subscription without a dead-letter policy',
   async (t: ExecutionContext): Promise<void> => {
     const topicName: string = generateRandomTopicName();
