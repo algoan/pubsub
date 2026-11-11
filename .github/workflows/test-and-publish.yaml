@@ -60,19 +60,24 @@ jobs:
 
   # One stable check name for the whole matrix: the matrix job names change with the Node.js
   # versions and contain a comma, so neither a ruleset nor renovate-automerge can list them.
-  # test has continue-on-error, so its result is not enough: every matrix check run must have
-  # succeeded too, which renovate-automerge verifies on its own.
+  # test has continue-on-error, so needs.test.result is success even when a test fails: read the
+  # conclusion of every matrix job instead.
   tests:
     name: Tests
     needs: test
     if: always()
-    permissions: {}
+    permissions:
+      actions: read
     runs-on: ubuntu-latest
     steps:
-    - name: Check the matrix completed
+    - name: Check every matrix job succeeded
       env:
-        RESULT: ${{ needs.test.result }}
-      run: test "$RESULT" = success
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        conclusions=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" --paginate \
+          --jq '.jobs[] | select(.name | startswith("test (")) | "\(.name): \(.conclusion)"')
+        echo "$conclusions"
+        [[ -n "$conclusions" ]] && ! grep -qv ': success$' <<<"$conclusions"
 
   publish:
     permissions:

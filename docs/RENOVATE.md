@@ -69,9 +69,8 @@ flowchart TD
 
 `Tests` is a job of `test-and-publish.yaml` that waits for the Node.js matrix: the matrix job names
 (`test (22.x, 11)`) change with the versions and contain a comma, which `required_checks` can't hold.
-The `test` job has `continue-on-error`, so the workflow run stays green when a test fails:
-`renovate-automerge` still refuses the merge, because it requires every check run of the head
-commit to have succeeded.
+The `test` job has `continue-on-error`, so the workflow run stays green when a test fails: `Tests` reads the
+conclusion of every matrix job rather than `needs.test.result`, and fails if one of them failed.
 
 ## Configuration
 
