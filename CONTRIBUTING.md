@@ -15,3 +15,7 @@ If you want to add missing APIs, or correct an issue, you will have to follow th
 ## Code Style
 
 This project uses [ESLint](https://eslint.org/) to analyze the TypeScript code. Commit are linted too thanks to [commitlint](https://github.com/conventional-changelog/commitlint) and the [conventional commit format](https://conventionalcommits.org/).
+
+## Dependency updates
+
+Dependencies are updated by Renovate, and its security fixes are routed by CVSS: see [docs/RENOVATE.md](docs/RENOVATE.md).
