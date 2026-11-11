@@ -58,6 +58,22 @@ jobs:
     - run: npm i
     - run: npm run cover
 
+  # One stable check name for the whole matrix: the matrix job names change with the Node.js
+  # versions and contain a comma, so neither a ruleset nor renovate-automerge can list them.
+  # test has continue-on-error, so its result is not enough: every matrix check run must have
+  # succeeded too, which renovate-automerge verifies on its own.
+  tests:
+    name: Tests
+    needs: test
+    if: always()
+    permissions: {}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check the matrix completed
+      env:
+        RESULT: ${{ needs.test.result }}
+      run: test "$RESULT" = success
+
   publish:
     permissions:
       # Push the release commit and tag, and create the GitHub Release
