@@ -5,6 +5,7 @@ import * as path from 'path';
 import test, { ExecutionContext, registerCompletionHandler } from 'ava';
 import * as sinon from 'sinon';
 import { IAM } from '@google-cloud/pubsub/build/src/iam';
+import { Subscription } from '@google-cloud/pubsub';
 
 import { GCPubSub, PubSubFactory, Transport } from '../src';
 import { ExtendedMessage } from '../src/GoogleCloudPubSub';
@@ -818,6 +819,203 @@ test.serial(
       t.true(iamSetPolicyStub.notCalled, 'should not call setPolicy again for an existing subscription');
     } finally {
       authRequestStub.restore();
+    }
+  },
+);
+
+test.serial(
+  'GPS014l - should create the missing drain subscription for an existing subscription whose dead-letter policy was set outside the library',
+  async (t: ExecutionContext): Promise<void> => {
+    const threeDaysInSeconds = 259200;
+    const topicName: string = generateRandomTopicName();
+    const dltName: string = generateRandomTopicName();
+    const pubsub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: {
+        projectId,
+        deadLetterOptions: {
+          drainSubscriptionOptions: {
+            messageRetentionDuration: { seconds: threeDaysInSeconds },
+          },
+        },
+      },
+    });
+
+    const [topic] = await pubsub.client.createTopic(topicName);
+    await pubsub.client.createTopic(dltName);
+    await topic.createSubscription(topicName, {
+      deadLetterPolicy: {
+        deadLetterTopic: `projects/${projectId}/topics/${dltName}`,
+        maxDeliveryAttempts: 7,
+      },
+    });
+
+    const authRequestStub = sinon.stub(pubsub.client.auth, 'request').resolves({
+      data: { projectNumber: '123456789' },
+    } as any);
+
+    try {
+      await pubsub.listen(topicName);
+
+      const [drainSubs] = await pubsub.client.topic(dltName).getSubscriptions();
+      const [subMetadata] = await pubsub.client.subscription(topicName).getMetadata();
+      const [isAutoDltExisting] = await pubsub.client.topic(`${topicName}-deadletter`).exists();
+
+      t.deepEqual(
+        drainSubs.map((s) => s.name),
+        [`projects/${projectId}/subscriptions/${dltName}-sub`],
+        'the existing dead-letter topic should get exactly one drain subscription',
+      );
+
+      const [drainMetadata] = await drainSubs[0].getMetadata();
+
+      t.is(Number(drainMetadata.messageRetentionDuration?.seconds), threeDaysInSeconds);
+      t.is(subMetadata.deadLetterPolicy?.deadLetterTopic, `projects/${projectId}/topics/${dltName}`);
+      t.is(subMetadata.deadLetterPolicy?.maxDeliveryAttempts, 7);
+      t.false(isAutoDltExisting, 'no auto-derived dead-letter topic should be created');
+      t.true(authRequestStub.notCalled);
+      t.true(iamGetPolicyStub.notCalled);
+      t.true(iamSetPolicyStub.notCalled);
+    } finally {
+      authRequestStub.restore();
+    }
+  },
+);
+
+test.serial(
+  'GPS014o - should create the drain subscription without an expiration unless drainSubscriptionOptions overrides it',
+  async (t: ExecutionContext): Promise<void> => {
+    const defaultTopic: string = generateRandomTopicName();
+    const overrideTopic: string = generateRandomTopicName();
+    const sevenDays = { seconds: 604800 };
+    const defaultPubSub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: { projectId, deadLetterOptions: {} },
+    });
+    const overridePubSub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: {
+        projectId,
+        deadLetterOptions: { drainSubscriptionOptions: { expirationPolicy: { ttl: sevenDays } } },
+      },
+    });
+
+    const createSpy = sinon.spy(Subscription.prototype, 'create');
+    const authRequestStubs = [defaultPubSub, overridePubSub].map((pubsub) =>
+      sinon.stub(pubsub.client.auth, 'request').resolves({ data: { projectNumber: '123456789' } } as any),
+    );
+
+    try {
+      await defaultPubSub.listen(defaultTopic);
+      await overridePubSub.listen(overrideTopic);
+
+      const drainCreateOptions = (topicName: string): any =>
+        createSpy
+          .getCalls()
+          .find((call) => (call.thisValue as Subscription).name.endsWith(`${topicName}-deadletter-sub`))?.args[0];
+
+      t.deepEqual(drainCreateOptions(defaultTopic)?.expirationPolicy, {});
+      t.deepEqual(drainCreateOptions(overrideTopic)?.expirationPolicy, { ttl: sevenDays });
+    } finally {
+      createSpy.restore();
+      authRequestStubs.forEach((stub) => stub.restore());
+    }
+  },
+);
+
+test.serial(
+  'GPS014p - should warn instead of accepting a same-named subscription attached to another topic as the drain',
+  async (t: ExecutionContext): Promise<void> => {
+    const topicName: string = generateRandomTopicName();
+    const dltName: string = generateRandomTopicName();
+    const otherTopicName: string = generateRandomTopicName();
+    const pubsub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: {
+        projectId,
+        deadLetterOptions: {},
+      },
+    });
+
+    const [topic] = await pubsub.client.createTopic(topicName);
+    await pubsub.client.createTopic(dltName);
+    const [otherTopic] = await pubsub.client.createTopic(otherTopicName);
+    await otherTopic.createSubscription(`${dltName}-sub`);
+    await topic.createSubscription(topicName, {
+      deadLetterPolicy: { deadLetterTopic: `projects/${projectId}/topics/${dltName}` },
+    });
+
+    const warnStub = sinon.stub((pubsub as any).logger, 'warn');
+
+    try {
+      await t.notThrowsAsync(pubsub.listen(topicName));
+
+      const [drainSubs] = await pubsub.client.topic(dltName).getSubscriptions();
+      const [collidingMetadata] = await pubsub.client.subscription(`${dltName}-sub`).getMetadata();
+
+      t.true(warnStub.calledOnce, 'the collision should be reported');
+      t.regex(String(warnStub.firstCall.args[0]?.err?.message), /is attached to/);
+      t.is(drainSubs.length, 0);
+      t.is(collidingMetadata.topic, `projects/${projectId}/topics/${otherTopicName}`);
+    } finally {
+      warnStub.restore();
+    }
+  },
+);
+
+test.serial(
+  'GPS014m - should not create dead-letter resources for an existing subscription without a dead-letter policy',
+  async (t: ExecutionContext): Promise<void> => {
+    const topicName: string = generateRandomTopicName();
+    const pubsub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: {
+        projectId,
+        deadLetterOptions: {},
+      },
+    });
+
+    const [topic] = await pubsub.client.createTopic(topicName);
+    await topic.createSubscription(topicName);
+
+    await pubsub.listen(topicName);
+
+    const [subMetadata] = await pubsub.client.subscription(topicName).getMetadata();
+    const [isAutoDltExisting] = await pubsub.client.topic(`${topicName}-deadletter`).exists();
+
+    t.falsy(subMetadata.deadLetterPolicy?.deadLetterTopic);
+    t.false(isAutoDltExisting);
+  },
+);
+
+test.serial(
+  'GPS014n - should still listen when the drain subscription of an existing subscription cannot be created',
+  async (t: ExecutionContext): Promise<void> => {
+    const topicName: string = generateRandomTopicName();
+    const dltName: string = generateRandomTopicName();
+    const pubsub: GCPubSub = PubSubFactory.create({
+      transport: Transport.GOOGLE_PUBSUB,
+      options: {
+        projectId,
+        deadLetterOptions: {},
+      },
+    });
+
+    const [topic] = await pubsub.client.createTopic(topicName);
+    await pubsub.client.createTopic(dltName);
+    await topic.createSubscription(topicName, {
+      deadLetterPolicy: { deadLetterTopic: `projects/${projectId}/topics/${dltName}` },
+    });
+
+    const createStub = sinon
+      .stub(Subscription.prototype, 'create')
+      .rejects(Object.assign(new Error('7 PERMISSION_DENIED: User not authorized'), { code: 7 }));
+
+    try {
+      await t.notThrowsAsync(pubsub.listen(topicName));
+      t.true(createStub.calledOnce, 'the drain subscription creation should have been attempted');
+    } finally {
+      createStub.restore();
     }
   },
 );
