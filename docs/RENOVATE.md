@@ -43,7 +43,7 @@ pinning it: `@algoan/pubsub` is a library, an exact version would be forced on e
 
 Not scored by the triage:
 
-- GitHub Actions advisories: such a security PR gets `needs-review` and a ticket at CVSS unknown;
+- GitHub Actions advisories: such a security PR gets `needs-review` at CVSS unknown;
 - packages left unscored by a GitHub API rate limit: the triage comment lists them with the reset
   time, and the automerge doesn't merge the PR. Re-run the triage after that time.
 
@@ -82,8 +82,9 @@ flowchart TD
   running (Socket and CodeRabbit can end after the test workflow, and their end starts no new run),
   then starts a new run if some still are, three times at most. It never merges a PR with a change
   request or an unresolved thread.
-- **Critical fixes (CVSS ≥ 9.0)** take the same path with the `critical` label and a P1 ticket: run
-  the publish workflow quickly once merged.
+- **Critical fixes (CVSS ≥ 9.0)** take the same path with the `critical` label: run the publish
+  workflow quickly once merged. Tracking the vulnerability (ticket, priority) is up to the apps that
+  depend on this package, not to this repository.
 
 `Tests` is a job of `test-and-publish.yaml` that waits for the Node.js matrix: the matrix job names
 (`test (22.x, 11)`) change with the versions and contain a comma, which `required_checks` can't hold.
